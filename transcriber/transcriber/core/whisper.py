@@ -61,9 +61,11 @@ class WhisperModel:
 
         try:
             # Transcribe using MLX Whisper
+            # Convert model name to HuggingFace repo path
+            model_repo = f"mlx-community/whisper-{self.model_name}"
             result = mlx_whisper.transcribe(
                 audio_path,
-                path_or_hf_repo=self.model_name,
+                path_or_hf_repo=model_repo,
                 language=language,
                 task=task,
                 fp16=(settings.compute_type == "float16"),
