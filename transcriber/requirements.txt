@@ -4,8 +4,8 @@ uvicorn[standard]==0.27.0
 python-multipart==0.0.6
 
 # MLX and Whisper
-mlx==0.17.0
-mlx-whisper==0.3.0
+mlx>=0.30.0
+mlx-whisper>=0.4.0
 
 # Configuration
 python-dotenv==1.0.0
