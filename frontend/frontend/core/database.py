@@ -1,8 +1,8 @@
 """Database initialization and session management."""
 
 import logging
-from sqlalchemy import create_engine, event, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import Engine
 
 from frontend.core.config import settings

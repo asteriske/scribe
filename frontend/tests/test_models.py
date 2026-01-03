@@ -1,11 +1,10 @@
 """Test database models."""
 import pytest
-from datetime import datetime, timedelta
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-from frontend.core.models import Base, Transcription
-from frontend.core.database import init_db, get_db
+from frontend.core.models import Transcription
+from frontend.core.database import init_db
 
 
 @pytest.fixture

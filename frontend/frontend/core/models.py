@@ -1,7 +1,7 @@
 """SQLAlchemy database models."""
 
-from datetime import datetime, timedelta
-from sqlalchemy import Column, String, Integer, DateTime, Text, Index
+from datetime import datetime
+from sqlalchemy import Column, String, Integer, DateTime, Text, Index, func
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -37,7 +37,7 @@ class Transcription(Base):
     progress = Column(Integer, default=0)
 
     # Timestamps
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=func.now())
     started_at = Column(DateTime)
     transcribed_at = Column(DateTime)
     audio_cached_until = Column(DateTime)
