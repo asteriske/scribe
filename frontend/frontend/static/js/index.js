@@ -97,13 +97,13 @@ async function loadRecent() {
 
         const transcriptions = await response.json();
 
-        if (transcriptions.length === 0) {
+        if (transcriptions.items.length === 0) {
             recentList.innerHTML = '<p class="loading">No recent transcriptions</p>';
             return;
         }
 
         // Build HTML for transcriptions list
-        const html = transcriptions.map(t => {
+        const html = transcriptions.items.map(t => {
             const createdDate = new Date(t.created_at).toLocaleString();
             const statusClass = t.status.toLowerCase().replace(' ', '-');
 
@@ -111,14 +111,14 @@ async function loadRecent() {
                 <div class="transcription-item">
                     <div class="transcription-header">
                         <div>
-                            <div class="transcription-title">${escapeHtml(t.title || 'Untitled')}</div>
-                            <a href="${escapeHtml(t.url)}" class="transcription-url" target="_blank" rel="noopener">${escapeHtml(truncateUrl(t.url))}</a>
+                            <div class="transcription-title">${escapeHtml(t.source.title || 'Untitled')}</div>
+                            <a href="${escapeHtml(t.source.url)}" class="transcription-url" target="_blank" rel="noopener">${escapeHtml(truncateUrl(t.source.url))}</a>
                         </div>
                         <span class="status-badge ${statusClass}">${escapeHtml(t.status)}</span>
                     </div>
                     <div class="transcription-meta">
                         <span>Created: ${createdDate}</span>
-                        ${t.duration ? `<span>Duration: ${formatDuration(t.duration)}</span>` : ''}
+                        ${t.duration_seconds ? `<span>Duration: ${formatDuration(t.duration_seconds)}</span>` : ''}
                     </div>
                     ${t.status === 'completed' ? `<a href="/transcriptions/${t.id}" class="view-link">View Transcription →</a>` : ''}
                 </div>
