@@ -182,6 +182,24 @@ button,
     background-color: #c9302c;
 }
 
+.btn-delete {
+    background-color: transparent;
+    border: 1px solid var(--gray-400);
+    color: var(--gray-600);
+    padding: 4px 8px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    line-height: 1;
+}
+
+.btn-delete:hover {
+    background-color: var(--error-color);
+    border-color: var(--error-color);
+    color: white;
+}
+
 /* Status Message */
 .status-message {
     background-color: var(--gray-100);

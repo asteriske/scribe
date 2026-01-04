@@ -114,7 +114,10 @@ async function loadRecent() {
                             <div class="transcription-title">${escapeHtml(t.source.title || 'Untitled')}</div>
                             <a href="${escapeHtml(t.source.url)}" class="transcription-url" target="_blank" rel="noopener">${escapeHtml(truncateUrl(t.source.url))}</a>
                         </div>
-                        <span class="status-badge ${statusClass}">${escapeHtml(t.status)}</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="status-badge ${statusClass}">${escapeHtml(t.status)}</span>
+                            <button onclick="deleteTranscription('${escapeHtml(t.id)}')" class="btn-delete" title="Delete transcription">🗑️</button>
+                        </div>
                     </div>
                     <div class="transcription-meta">
                         <span>Created: ${createdDate}</span>
@@ -166,5 +169,30 @@ function formatDuration(seconds) {
         return `${minutes}m ${secs}s`;
     } else {
         return `${secs}s`;
+    }
+}
+
+/**
+ * Delete a transcription
+ */
+async function deleteTranscription(id) {
+    if (!confirm('Are you sure you want to delete this transcription? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/transcriptions/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            // Reload the recent transcriptions list
+            await loadRecent();
+        } else {
+            alert('Failed to delete transcription. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error deleting transcription:', error);
+        alert('Failed to delete transcription. Please try again.');
     }
 }
