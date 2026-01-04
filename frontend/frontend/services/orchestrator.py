@@ -15,6 +15,7 @@ from frontend.services.downloader import Downloader
 from frontend.services.transcriber_client import TranscriberClient
 from frontend.services.storage import StorageManager
 from frontend.utils.url_parser import parse_url
+from frontend.api.websocket import broadcast_progress, broadcast_completion, broadcast_error
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +149,7 @@ class Orchestrator:
             await self._save_results(transcription_id, download_result.metadata, final_result.result)
 
             await self._update_status(transcription_id, "completed", 100)
+            await broadcast_completion(transcription_id)
             logger.info(f"Successfully processed {transcription_id}")
 
             return OrchestrationResult(
@@ -195,6 +197,9 @@ class Orchestrator:
 
                 session.commit()
                 logger.info(f"{transcription_id}: {status} ({progress}%)")
+
+                # Broadcast via WebSocket
+                await broadcast_progress(transcription_id, status, progress)
 
     async def _update_metadata(self, transcription_id: str, metadata: dict):
         """Update transcription with download metadata."""
@@ -260,6 +265,9 @@ class Orchestrator:
                 transcription.error_message = error
                 session.commit()
                 logger.error(f"{transcription_id}: {error}")
+
+                # Broadcast via WebSocket
+                await broadcast_error(transcription_id, error)
 
     def _extract_full_text(self, transcription_data: dict) -> str:
         """Extract full text from segments."""

@@ -2,12 +2,13 @@
 
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
 from frontend.core.config import settings
 from frontend.core.database import init_db, get_engine
 from frontend.api.routes import router as api_router
+from frontend.api.websocket import websocket_endpoint
 
 # Configure logging
 logging.basicConfig(
@@ -65,6 +66,12 @@ app.include_router(api_router)
 async def root():
     """Root endpoint."""
     return {"message": "Scribe Frontend API", "version": "0.1.0"}
+
+
+@app.websocket("/ws")
+async def websocket_handler(websocket: WebSocket):
+    """WebSocket endpoint."""
+    await websocket_endpoint(websocket)
 
 
 if __name__ == "__main__":
