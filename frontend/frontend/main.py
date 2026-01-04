@@ -1,5 +1,6 @@
 """Main FastAPI application."""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -11,6 +12,7 @@ from frontend.core.config import settings
 from frontend.core.database import init_db, get_engine
 from frontend.api.routes import router as api_router, web_router
 from frontend.api.websocket import websocket_endpoint
+from frontend.utils.cleanup import CleanupService
 
 # Configure logging
 logging.basicConfig(
@@ -38,10 +40,28 @@ async def lifespan(app: FastAPI):
     init_db(engine)
     logger.info("Database initialized")
 
+    # Start cleanup task
+    cleanup_service = CleanupService()
+    cleanup_task = asyncio.create_task(run_periodic_cleanup(cleanup_service))
+
     yield
 
     # Shutdown
+    cleanup_task.cancel()
     logger.info("Shutting down frontend service")
+
+
+async def run_periodic_cleanup(cleanup_service: CleanupService):
+    """Run cleanup tasks periodically."""
+    while True:
+        try:
+            # Run every 6 hours
+            await asyncio.sleep(6 * 60 * 60)
+            await cleanup_service.run_cleanup()
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Cleanup task error: {e}")
 
 
 app = FastAPI(
