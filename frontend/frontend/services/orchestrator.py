@@ -85,23 +85,30 @@ class Orchestrator:
             transcription_id = url_info.id
 
             with self.SessionLocal() as session:
-                # Check for duplicate
+                # Check for existing job
                 existing = session.query(Transcription).filter_by(source_url=url).first()
-                if existing:
-                    logger.info(f"URL already processed: {transcription_id}")
+
+                # Only skip if already completed or currently processing
+                if existing and existing.status in ['completed', 'transcribing', 'downloading']:
+                    logger.info(f"URL already processed or in progress: {transcription_id} (status: {existing.status})")
                     return OrchestrationResult(
                         success=False,
                         transcription_id=transcription_id,
-                        error="URL already transcribed"
+                        error=f"URL already {existing.status}"
                     )
 
-                # Create job record
-                transcription = self._create_job_record(
-                    session=session,
-                    transcription_id=transcription_id,
-                    url=url,
-                    source_type=url_info.source_type.value
-                )
+                # Use existing record if pending/failed, otherwise create new
+                if existing and existing.status in ['pending', 'failed']:
+                    logger.info(f"Resuming {existing.status} job: {transcription_id}")
+                    transcription = existing
+                elif not existing:
+                    # Create job record
+                    transcription = self._create_job_record(
+                        session=session,
+                        transcription_id=transcription_id,
+                        url=url,
+                        source_type=url_info.source_type.value
+                    )
                 session.commit()
 
             # Download audio
