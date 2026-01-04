@@ -2,11 +2,13 @@
 
 import logging
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Request
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.encoders import jsonable_encoder
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from pathlib import Path
 
 from frontend.api.models import (
     TranscribeRequest,
@@ -22,6 +24,19 @@ from frontend.utils.url_parser import parse_url
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["api"])
+web_router = APIRouter(tags=["web"])
+
+template_dir = Path(__file__).parent.parent / "web" / "templates"
+templates = Jinja2Templates(directory=str(template_dir))
+
+# Add template filter
+def format_time(seconds):
+    """Format seconds to MM:SS"""
+    mins = int(seconds // 60)
+    secs = int(seconds % 60)
+    return f"{mins:02d}:{secs:02d}"
+
+templates.env.filters['format_time'] = format_time
 
 
 @router.get("/health")
@@ -233,3 +248,35 @@ async def export_transcription(
 
     else:
         raise HTTPException(status_code=400, detail="Invalid format. Use txt, srt, or json")
+
+
+@web_router.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    """Main web interface."""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@web_router.get("/transcriptions/{transcription_id}", response_class=HTMLResponse)
+async def view_transcription(
+    request: Request,
+    transcription_id: str,
+    db: Session = Depends(get_db)
+):
+    """View transcription detail page."""
+    transcription = db.query(Transcription).filter_by(id=transcription_id).first()
+
+    if not transcription:
+        raise HTTPException(status_code=404, detail="Transcription not found")
+
+    # Load full transcription data
+    from frontend.services.storage import StorageManager
+    storage = StorageManager()
+    data = storage.load_transcription(transcription_id) if transcription.status == 'completed' else None
+
+    segments = data.get('transcription', {}).get('segments', []) if data else []
+
+    return templates.TemplateResponse("transcription.html", {
+        "request": request,
+        "transcription": transcription,
+        "segments": segments
+    })

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from frontend.core.config import settings
 from frontend.core.database import init_db, get_engine
-from frontend.api.routes import router as api_router
+from frontend.api.routes import router as api_router, web_router
 from frontend.api.websocket import websocket_endpoint
 
 # Configure logging
@@ -58,14 +58,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API routes
+# Include routers
+app.include_router(web_router)
 app.include_router(api_router)
-
-
-@app.get("/")
-async def root():
-    """Root endpoint."""
-    return {"message": "Scribe Frontend API", "version": "0.1.0"}
 
 
 @app.websocket("/ws")

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Scribe - Transcribe Audio{% endblock %}
+
+{% block content %}
+<div class="main-form">
+    <h2>Transcribe Audio from URL</h2>
+    <p class="subtitle">Enter a YouTube, Apple Podcasts, or direct audio URL to get started</p>
+
+    <form id="transcribeForm">
+        <div class="form-group">
+            <label for="url">URL</label>
+            <input
+                type="url"
+                id="url"
+                name="url"
+                placeholder="https://youtube.com/watch?v=..."
+                required
+                autofocus
+            >
+        </div>
+
+        <button type="submit" id="submitButton" class="btn-primary">
+            Transcribe
+        </button>
+    </form>
+
+    <div id="status" class="status-message" style="display: none;">
+        <div class="status-content">
+            <h3 id="statusTitle">Processing...</h3>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+            <p id="statusMessage">Initializing...</p>
+        </div>
+    </div>
+
+    <div id="error" class="error-message" style="display: none;">
+        <h3>Error</h3>
+        <p id="errorMessage"></p>
+    </div>
+</div>
+
+<div class="recent-transcriptions">
+    <h2>Recent Transcriptions</h2>
+    <div id="recentList">
+        <p class="loading">Loading...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/index.js"></script>
+{% endblock %}
