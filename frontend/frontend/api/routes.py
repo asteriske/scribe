@@ -271,7 +271,12 @@ async def view_transcription(
     # Load full transcription data
     from frontend.services.storage import StorageManager
     storage = StorageManager()
-    data = storage.load_transcription(transcription_id) if transcription.status == 'completed' else None
+
+    try:
+        data = storage.load_transcription(transcription_id) if transcription.status == 'completed' else None
+    except Exception as e:
+        logger.error(f"Failed to load transcription data for {transcription_id}: {e}")
+        data = None
 
     segments = data.get('transcription', {}).get('segments', []) if data else []
 
