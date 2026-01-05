@@ -2,6 +2,9 @@
  * Index page functionality - form submission and recent transcriptions
  */
 
+// Global tag input instance
+let tagInput = null;
+
 /**
  * Handle form submission
  */
@@ -9,6 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('transcribeForm');
     const submitButton = document.getElementById('submitButton');
     const urlInput = document.getElementById('url');
+
+    // Initialize tag input
+    const tagContainer = document.getElementById('tagInput');
+    if (tagContainer) {
+        tagInput = new TagInput(tagContainer, []);
+    }
 
     if (form) {
         form.addEventListener('submit', async (event) => {
@@ -28,12 +37,15 @@ document.addEventListener('DOMContentLoaded', () => {
             hideError();
 
             try {
+                // Get tags from tag input
+                const tags = tagInput ? tagInput.getTags() : [];
+
                 const response = await fetch('/api/transcribe', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ url }),
+                    body: JSON.stringify({ url, tags }),
                 });
 
                 if (!response.ok) {
@@ -55,6 +67,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const data = await response.json();
                 console.log('Transcription started:', data);
+
+                // Clear form
+                urlInput.value = '';
+                if (tagInput) {
+                    tagInput.setTags([]);
+                }
 
                 // Show status message
                 const statusElement = document.getElementById('status');
