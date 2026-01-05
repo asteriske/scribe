@@ -16,11 +16,22 @@ from frontend.api.models import (
     TranscriptionResponse,
     TranscriptionListResponse,
     ErrorResponse,
-    UpdateTagsRequest
+    UpdateTagsRequest,
+    SummaryRequest,
+    SummaryResponse,
+    SummaryListResponse,
+    TagConfigRequest,
+    TagConfigResponse,
+    DefaultConfigResponse,
+    AllTagConfigsResponse,
+    SecretRequest,
+    SecretListResponse
 )
 from frontend.core.database import get_db
-from frontend.core.models import Transcription
+from frontend.core.models import Transcription, Summary
 from frontend.services.orchestrator import Orchestrator
+from frontend.services.summarizer import SummarizerService
+from frontend.services.config_manager import ConfigManager
 from frontend.utils.url_parser import parse_url
 from frontend.utils.tag_validator import normalize_tags
 
@@ -325,10 +336,300 @@ async def export_transcription(
         raise HTTPException(status_code=400, detail="Invalid format. Use txt, srt, or json")
 
 
+# =============================================================================
+# Summary API Endpoints
+# =============================================================================
+
+@router.get("/summaries", response_model=SummaryListResponse)
+async def list_summaries(
+    transcription_id: str = Query(..., description="Transcription ID to list summaries for"),
+    db: Session = Depends(get_db)
+):
+    """List all summaries for a transcription."""
+    summarizer = SummarizerService()
+    summaries = summarizer.get_summaries_for_transcription(db, transcription_id)
+    return SummaryListResponse(
+        items=[SummaryResponse(**s.to_dict()) for s in summaries]
+    )
+
+
+@router.get("/summaries/{summary_id}", response_model=SummaryResponse)
+async def get_summary(summary_id: str, db: Session = Depends(get_db)):
+    """Get a specific summary by ID."""
+    summarizer = SummarizerService()
+    summary = summarizer.get_summary(db, summary_id)
+
+    if not summary:
+        raise HTTPException(status_code=404, detail="Summary not found")
+
+    return SummaryResponse(**summary.to_dict())
+
+
+@router.post(
+    "/summaries",
+    response_model=SummaryResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Transcription not found"},
+        400: {"model": ErrorResponse, "description": "Transcription not completed or API error"}
+    }
+)
+async def create_summary(
+    request: SummaryRequest,
+    db: Session = Depends(get_db)
+):
+    """Generate and save a new summary for a transcription."""
+    summarizer = SummarizerService()
+    result = summarizer.generate_summary(
+        db=db,
+        transcription_id=request.transcription_id,
+        api_endpoint=request.api_endpoint,
+        model=request.model,
+        api_key=request.api_key,
+        system_prompt=request.system_prompt
+    )
+
+    if not result.success:
+        if "not found" in result.error.lower():
+            raise HTTPException(status_code=404, detail=result.error)
+        raise HTTPException(status_code=400, detail=result.error)
+
+    return SummaryResponse(**result.summary.to_dict())
+
+
+@router.get("/summaries/{summary_id}/export/{format}")
+async def export_summary(
+    summary_id: str,
+    format: str,
+    db: Session = Depends(get_db)
+):
+    """Export summary in specified format (txt or json)."""
+    from fastapi.responses import PlainTextResponse, JSONResponse
+
+    summarizer = SummarizerService()
+    result = summarizer.export_summary(db, summary_id, format)
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Summary not found or invalid format")
+
+    content, content_type = result
+
+    if format == "txt":
+        return PlainTextResponse(content, headers={
+            "Content-Disposition": f"attachment; filename={summary_id}.txt"
+        })
+    elif format == "json":
+        return JSONResponse(json.loads(content), headers={
+            "Content-Disposition": f"attachment; filename={summary_id}.json"
+        })
+    else:
+        raise HTTPException(status_code=400, detail="Invalid format. Use txt or json")
+
+
+@router.delete("/summaries/{summary_id}")
+async def delete_summary(summary_id: str, db: Session = Depends(get_db)):
+    """Delete a summary."""
+    summarizer = SummarizerService()
+    success = summarizer.delete_summary(db, summary_id)
+
+    if not success:
+        raise HTTPException(status_code=404, detail="Summary not found")
+
+    return {"message": "Summary deleted successfully"}
+
+
+# =============================================================================
+# Tag Configuration API Endpoints
+# =============================================================================
+
+@router.get("/config/tags", response_model=AllTagConfigsResponse)
+async def get_all_tag_configs():
+    """Get all tag configurations."""
+    config_manager = ConfigManager()
+    configs = config_manager.get_all_tag_configs()
+
+    default_config = configs.get("default", {})
+    tags_config = configs.get("tags", {})
+
+    return AllTagConfigsResponse(
+        default=DefaultConfigResponse(**default_config),
+        tags={
+            name: TagConfigResponse(tag_name=name, **config)
+            for name, config in tags_config.items()
+        }
+    )
+
+
+@router.get("/config/tags/default", response_model=DefaultConfigResponse)
+async def get_default_config():
+    """Get default configuration."""
+    config_manager = ConfigManager()
+    config = config_manager.get_default_config()
+    return DefaultConfigResponse(**config)
+
+
+@router.put("/config/tags/default", response_model=DefaultConfigResponse)
+async def update_default_config(request: TagConfigRequest):
+    """Update default configuration."""
+    config_manager = ConfigManager()
+    success = config_manager.update_default_config(
+        api_endpoint=request.api_endpoint,
+        model=request.model,
+        system_prompt=request.system_prompt,
+        api_key_ref=request.api_key_ref
+    )
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update default config")
+
+    return DefaultConfigResponse(
+        api_endpoint=request.api_endpoint,
+        model=request.model,
+        api_key_ref=request.api_key_ref,
+        system_prompt=request.system_prompt
+    )
+
+
+@router.post(
+    "/config/tags",
+    response_model=TagConfigResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Tag name required"}
+    }
+)
+async def create_tag_config(request: TagConfigRequest):
+    """Create a new tag configuration."""
+    if not request.tag_name:
+        raise HTTPException(status_code=400, detail="tag_name is required for creating a tag config")
+
+    config_manager = ConfigManager()
+    success = config_manager.create_tag_config(
+        tag_name=request.tag_name,
+        api_endpoint=request.api_endpoint,
+        model=request.model,
+        system_prompt=request.system_prompt,
+        api_key_ref=request.api_key_ref
+    )
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to create tag config")
+
+    return TagConfigResponse(
+        tag_name=request.tag_name,
+        api_endpoint=request.api_endpoint,
+        model=request.model,
+        api_key_ref=request.api_key_ref,
+        system_prompt=request.system_prompt
+    )
+
+
+@router.put(
+    "/config/tags/{tag_name}",
+    response_model=TagConfigResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Tag config not found"}
+    }
+)
+async def update_tag_config(tag_name: str, request: TagConfigRequest):
+    """Update an existing tag configuration."""
+    config_manager = ConfigManager()
+
+    # Check if exists
+    if not config_manager.get_tag_config(tag_name):
+        raise HTTPException(status_code=404, detail=f"Tag config '{tag_name}' not found")
+
+    success = config_manager.update_tag_config(
+        tag_name=tag_name,
+        api_endpoint=request.api_endpoint,
+        model=request.model,
+        system_prompt=request.system_prompt,
+        api_key_ref=request.api_key_ref
+    )
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update tag config")
+
+    return TagConfigResponse(
+        tag_name=tag_name,
+        api_endpoint=request.api_endpoint,
+        model=request.model,
+        api_key_ref=request.api_key_ref,
+        system_prompt=request.system_prompt
+    )
+
+
+@router.delete("/config/tags/{tag_name}")
+async def delete_tag_config(tag_name: str):
+    """Delete a tag configuration."""
+    config_manager = ConfigManager()
+    success = config_manager.delete_tag_config(tag_name)
+
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Tag config '{tag_name}' not found")
+
+    return {"message": f"Tag config '{tag_name}' deleted successfully"}
+
+
+# =============================================================================
+# Secrets Management API Endpoints
+# =============================================================================
+
+@router.get("/config/secrets", response_model=SecretListResponse)
+async def list_secrets():
+    """List secret key names (not values)."""
+    config_manager = ConfigManager()
+    return SecretListResponse(keys=config_manager.list_secret_names())
+
+
+@router.post("/config/secrets")
+async def add_secret(request: SecretRequest):
+    """Add or update a secret."""
+    config_manager = ConfigManager()
+    success = config_manager.add_secret(request.key_name, request.key_value)
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to save secret")
+
+    return {"message": f"Secret '{request.key_name}' saved successfully"}
+
+
+@router.delete("/config/secrets/{key_name}")
+async def delete_secret(key_name: str):
+    """Delete a secret."""
+    config_manager = ConfigManager()
+    success = config_manager.delete_secret(key_name)
+
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Secret '{key_name}' not found")
+
+    return {"message": f"Secret '{key_name}' deleted successfully"}
+
+
+# =============================================================================
+# Web Routes
+# =============================================================================
+
 @web_router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Main web interface."""
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@web_router.get("/summarize", response_class=HTMLResponse)
+async def summarize_page(
+    request: Request,
+    transcription_id: Optional[str] = Query(None)
+):
+    """Summarization interface."""
+    return templates.TemplateResponse("summarize.html", {
+        "request": request,
+        "preselected_transcription_id": transcription_id
+    })
+
+
+@web_router.get("/settings/tags", response_class=HTMLResponse)
+async def settings_tags_page(request: Request):
+    """Tag configuration settings page."""
+    return templates.TemplateResponse("settings_tags.html", {"request": request})
 
 
 @web_router.get("/transcriptions/{transcription_id}", response_class=HTMLResponse)
