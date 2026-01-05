@@ -8,6 +8,7 @@ from pydantic import BaseModel, HttpUrl, Field
 class TranscribeRequest(BaseModel):
     """Request to transcribe a URL."""
     url: str = Field(..., description="URL to transcribe (YouTube, Apple Podcasts, or direct audio)")
+    tags: List[str] = Field(default_factory=list, description="Optional tags for organization")
 
 
 class TranscriptionResponse(BaseModel):
@@ -23,6 +24,13 @@ class TranscriptionResponse(BaseModel):
     word_count: Optional[int] = None
     segments_count: Optional[int] = None
     error: Optional[str] = None
+    model: Optional[str] = None
+    tags: List[str] = Field(default_factory=list)
+
+
+class UpdateTagsRequest(BaseModel):
+    """Request to update transcription tags."""
+    tags: List[str] = Field(..., description="Tags to set (replaces existing)")
 
 
 class TranscriptionListResponse(BaseModel):
