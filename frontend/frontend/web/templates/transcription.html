@@ -30,6 +30,25 @@
             <span class="word-count">{{ transcription.word_count }} words</span>
             {% endif %}
         </div>
+
+        <div class="transcription-tags-section">
+            <h3>Tags</h3>
+            <div class="tags-display" id="tagsDisplay">
+                {% if transcription.to_dict().tags and transcription.to_dict().tags|length > 0 %}
+                    {% for tag in transcription.to_dict().tags %}
+                        <span class="tag-chip">{{ tag }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span class="no-tags">No tags</span>
+                {% endif %}
+                <button class="btn-edit-tags" id="editTagsBtn">Edit</button>
+            </div>
+            <div class="tags-edit" id="tagsEdit" style="display:none">
+                <div id="tagInput"></div>
+                <button class="btn-save" id="saveTagsBtn">Save</button>
+                <button class="btn-cancel" id="cancelTagsBtn">Cancel</button>
+            </div>
+        </div>
     </div>
 
     {% if transcription.status == 'completed' %}
@@ -98,5 +117,108 @@ function deleteTranscription(id) {
         });
     }
 }
+
+// Tag editing functionality
+document.addEventListener('DOMContentLoaded', () => {
+    const editBtn = document.getElementById('editTagsBtn');
+    const saveBtn = document.getElementById('saveTagsBtn');
+    const cancelBtn = document.getElementById('cancelTagsBtn');
+    const display = document.getElementById('tagsDisplay');
+    const edit = document.getElementById('tagsEdit');
+    const tagInputContainer = document.getElementById('tagInput');
+
+    if (!editBtn || !tagInputContainer) return;
+
+    let tagInputInstance = null;
+
+    // Get transcription ID from URL
+    const pathParts = window.location.pathname.split('/');
+    const transcriptionId = pathParts[pathParts.length - 1];
+
+    // Get current tags from display
+    function getCurrentTags() {
+        const chips = display.querySelectorAll('.tag-chip');
+        return Array.from(chips).map(chip => chip.textContent.trim());
+    }
+
+    // Edit button click
+    editBtn.addEventListener('click', () => {
+        const currentTags = getCurrentTags();
+
+        // Initialize tag input
+        if (!tagInputInstance) {
+            tagInputInstance = new TagInput(tagInputContainer, currentTags);
+        } else {
+            tagInputInstance.setTags(currentTags);
+        }
+
+        // Toggle visibility
+        display.style.display = 'none';
+        edit.style.display = 'block';
+    });
+
+    // Save button click
+    saveBtn.addEventListener('click', async () => {
+        if (!tagInputInstance) return;
+
+        const tags = tagInputInstance.getTags();
+
+        try {
+            const response = await fetch(`/api/transcriptions/${transcriptionId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ tags })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update tags');
+            }
+
+            // Update display without reloading page
+            const data = await response.json();
+            updateTagsDisplay(data.tags);
+
+            // Toggle visibility
+            display.style.display = 'flex';
+            edit.style.display = 'none';
+
+        } catch (error) {
+            console.error('Error saving tags:', error);
+            alert('Failed to update tags. Please try again.');
+        }
+    });
+
+    // Cancel button click
+    cancelBtn.addEventListener('click', () => {
+        display.style.display = 'flex';
+        edit.style.display = 'none';
+    });
+
+    /**
+     * Update tags display after save
+     */
+    function updateTagsDisplay(tags) {
+        // Clear existing chips
+        const chips = display.querySelectorAll('.tag-chip, .no-tags');
+        chips.forEach(chip => chip.remove());
+
+        // Add new chips
+        if (tags && tags.length > 0) {
+            tags.forEach(tag => {
+                const chip = document.createElement('span');
+                chip.className = 'tag-chip';
+                chip.textContent = tag;
+                display.insertBefore(chip, editBtn);
+            });
+        } else {
+            const noTags = document.createElement('span');
+            noTags.className = 'no-tags';
+            noTags.textContent = 'No tags';
+            display.insertBefore(noTags, editBtn);
+        }
+    }
+});
 </script>
 {% endblock %}
