@@ -94,3 +94,57 @@ def test_fts5_search(test_db):
 
         assert len(rows) == 1
         assert rows[0][0] == "yt_1"
+
+
+def test_transcription_with_tags(test_db):
+    """Test transcription model includes tags field."""
+    import json
+    with Session(test_db) as session:
+        transcription = Transcription(
+            id="test123",
+            source_type="youtube",
+            source_url="https://youtube.com/watch?v=test",
+            status="pending",
+            tags=json.dumps(["kindle", "format"])
+        )
+        session.add(transcription)
+        session.commit()
+
+        result = session.query(Transcription).filter_by(id="test123").first()
+        assert json.loads(result.tags) == ["kindle", "format"]
+
+
+def test_transcription_tags_default_empty(test_db):
+    """Test transcription tags defaults to empty list."""
+    import json
+    with Session(test_db) as session:
+        transcription = Transcription(
+            id="test124",
+            source_type="youtube",
+            source_url="https://youtube.com/watch?v=test2",
+            status="pending"
+        )
+        session.add(transcription)
+        session.commit()
+
+        result = session.query(Transcription).filter_by(id="test124").first()
+        assert result.tags == "[]"
+
+
+def test_transcription_to_dict_includes_tags(test_db):
+    """Test to_dict() includes tags field."""
+    import json
+    with Session(test_db) as session:
+        transcription = Transcription(
+            id="test125",
+            source_type="youtube",
+            source_url="https://youtube.com/watch?v=test3",
+            status="pending",
+            tags=json.dumps(["work", "review"])
+        )
+        session.add(transcription)
+        session.commit()
+
+        result = transcription.to_dict()
+        assert "tags" in result
+        assert result["tags"] == ["work", "review"]
