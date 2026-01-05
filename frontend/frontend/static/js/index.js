@@ -125,8 +125,32 @@ async function loadRecent() {
             const createdDate = new Date(t.created_at).toLocaleString();
             const statusClass = t.status.toLowerCase().replace(' ', '-');
 
+            // Render tags
+            const tagsHtml = t.tags && t.tags.length > 0
+                ? `<div class="transcription-tags">
+                     <div class="tags-display">
+                       ${t.tags.map(tag => `<span class="tag-chip">${escapeHtml(tag)}</span>`).join('')}
+                       <button class="btn-edit-tags" onclick="editTags('${escapeHtml(t.id)}', event)">Edit</button>
+                     </div>
+                     <div class="tags-edit" id="tags-edit-${escapeHtml(t.id)}" style="display:none">
+                       <div id="tags-input-${escapeHtml(t.id)}"></div>
+                       <button class="btn-save" onclick="saveTags('${escapeHtml(t.id)}', event)">Save</button>
+                       <button class="btn-cancel" onclick="cancelEditTags('${escapeHtml(t.id)}', event)">Cancel</button>
+                     </div>
+                   </div>`
+                : `<div class="transcription-tags">
+                     <div class="tags-display">
+                       <button class="btn-edit-tags" onclick="editTags('${escapeHtml(t.id)}', event)">Add Tags</button>
+                     </div>
+                     <div class="tags-edit" id="tags-edit-${escapeHtml(t.id)}" style="display:none">
+                       <div id="tags-input-${escapeHtml(t.id)}"></div>
+                       <button class="btn-save" onclick="saveTags('${escapeHtml(t.id)}', event)">Save</button>
+                       <button class="btn-cancel" onclick="cancelEditTags('${escapeHtml(t.id)}', event)">Cancel</button>
+                     </div>
+                   </div>`;
+
             return `
-                <div class="transcription-item">
+                <div class="transcription-item" id="item-${escapeHtml(t.id)}">
                     <div class="transcription-header">
                         <div>
                             <div class="transcription-title">${escapeHtml(t.source.title || 'Untitled')}</div>
@@ -141,6 +165,7 @@ async function loadRecent() {
                         <span>Created: ${createdDate}</span>
                         ${t.duration_seconds ? `<span>Duration: ${formatDuration(t.duration_seconds)}</span>` : ''}
                     </div>
+                    ${tagsHtml}
                     ${t.status === 'completed' ? `<a href="/transcriptions/${t.id}" class="view-link">View Transcription →</a>` : ''}
                 </div>
             `;
@@ -152,6 +177,87 @@ async function loadRecent() {
         console.error('Error loading recent transcriptions:', error);
         recentList.innerHTML = '<p class="loading">Failed to load recent transcriptions</p>';
     }
+}
+
+// Store tag input instances for editing
+const tagInputInstances = {};
+
+/**
+ * Enter edit mode for tags
+ */
+function editTags(transcriptionId, event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Hide display, show edit
+    const item = document.getElementById(`item-${transcriptionId}`);
+    const display = item.querySelector('.tags-display');
+    const edit = item.querySelector('.tags-edit');
+
+    display.style.display = 'none';
+    edit.style.display = 'block';
+
+    // Get current tags from display
+    const chips = display.querySelectorAll('.tag-chip');
+    const currentTags = Array.from(chips).map(chip => chip.textContent.trim());
+
+    // Initialize tag input if not exists
+    const inputContainer = document.getElementById(`tags-input-${transcriptionId}`);
+    if (!tagInputInstances[transcriptionId]) {
+        tagInputInstances[transcriptionId] = new TagInput(inputContainer, currentTags);
+    } else {
+        tagInputInstances[transcriptionId].setTags(currentTags);
+    }
+}
+
+/**
+ * Save edited tags
+ */
+async function saveTags(transcriptionId, event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const tagInputInstance = tagInputInstances[transcriptionId];
+    if (!tagInputInstance) return;
+
+    const tags = tagInputInstance.getTags();
+
+    try {
+        const response = await fetch(`/api/transcriptions/${transcriptionId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ tags })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update tags');
+        }
+
+        // Reload the list
+        await loadRecent();
+
+    } catch (error) {
+        console.error('Error saving tags:', error);
+        alert('Failed to update tags. Please try again.');
+    }
+}
+
+/**
+ * Cancel tag editing
+ */
+function cancelEditTags(transcriptionId, event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Hide edit, show display
+    const item = document.getElementById(`item-${transcriptionId}`);
+    const display = item.querySelector('.tags-display');
+    const edit = item.querySelector('.tags-edit');
+
+    display.style.display = 'flex';
+    edit.style.display = 'none';
 }
 
 /**
