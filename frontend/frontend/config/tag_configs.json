@@ -1,0 +1,22 @@
+{
+  "default": {
+    "api_endpoint": "http://localhost:11434/v1",
+    "model": "llama2",
+    "api_key_ref": null,
+    "system_prompt": "Provide a concise summary of the following transcription:"
+  },
+  "tags": {
+    "supersummarize": {
+      "api_endpoint": "https://api.openai.com/v1",
+      "model": "gpt-4",
+      "api_key_ref": "openai",
+      "system_prompt": "Provide a detailed, nuanced summary with key insights from the following transcription. Include main themes, important details, and notable quotes."
+    },
+    "highlevel": {
+      "api_endpoint": "http://localhost:11434/v1",
+      "model": "llama2",
+      "api_key_ref": null,
+      "system_prompt": "Provide a brief high-level overview of the following transcription in 2-3 sentences."
+    }
+  }
+}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Scribe - Summarize Transcription{% endblock %}
+
+{% block content %}
+<div class="summarize-page">
+    <!-- Section 1: Transcription Selector -->
+    <section class="transcription-selector">
+        <h2>Select a Transcription to Summarize</h2>
+        <div id="transcriptionList" class="transcription-list">
+            <p class="loading">Loading transcriptions...</p>
+        </div>
+        <div id="loadMoreContainer" class="load-more-container" style="display: none;">
+            <button id="loadMoreBtn" class="btn-secondary">Load More</button>
+        </div>
+    </section>
+
+    <!-- Section 2: Configuration Form -->
+    <section id="configSection" class="config-section" style="display: none;">
+        <h2>Summary Configuration</h2>
+        <div id="configInfo" class="config-info"></div>
+
+        <form id="summarizeForm">
+            <input type="hidden" id="transcriptionId" name="transcription_id">
+
+            <div class="form-group">
+                <label for="apiEndpoint">API Endpoint</label>
+                <input type="url" id="apiEndpoint" name="api_endpoint" placeholder="http://localhost:11434/v1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="model">Model</label>
+                <input type="text" id="model" name="model" placeholder="llama2" required>
+            </div>
+
+            <div class="form-group">
+                <label for="apiKey">API Key</label>
+                <input type="password" id="apiKey" name="api_key" placeholder="Leave blank if not required">
+                <span id="apiKeyHint" class="hint"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="systemPrompt">System Prompt</label>
+                <textarea id="systemPrompt" name="system_prompt" rows="4" placeholder="Enter the system prompt for summarization..." required></textarea>
+            </div>
+
+            <div class="token-info">
+                <span id="tokenCount">Estimated tokens: --</span>
+            </div>
+
+            <button type="submit" id="generateBtn" class="btn-primary">
+                Generate Summary
+            </button>
+        </form>
+
+        <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+            <div class="spinner"></div>
+            <p>Generating summary...</p>
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display: none;">
+            <h3>Error</h3>
+            <p id="errorText"></p>
+        </div>
+    </section>
+
+    <!-- Section 3: Results -->
+    <section id="resultsSection" class="results-section" style="display: none;">
+        <h2>Generated Summary</h2>
+
+        <div class="summary-result">
+            <div id="summaryText" class="summary-text"></div>
+
+            <div class="summary-metadata">
+                <span id="summaryTimestamp"></span>
+                <span id="summaryGenerationTime"></span>
+                <span id="summaryTokens"></span>
+            </div>
+
+            <div class="summary-actions">
+                <button id="downloadTxtBtn" class="btn-secondary">Download TXT</button>
+                <button id="downloadJsonBtn" class="btn-secondary">Download JSON</button>
+                <a id="viewHistoryLink" href="#" class="btn-link">View All Summaries for This Transcription</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Summary History Modal -->
+    <div id="historyModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Summary History</h3>
+                <button class="close-btn" onclick="closeHistoryModal()">&times;</button>
+            </div>
+            <div id="historyList" class="history-list">
+                <p class="loading">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/summarize.js"></script>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Scribe - Tag Configuration Settings{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <h2>Summarization Settings</h2>
+
+    <!-- Section 1: Tag Configurations -->
+    <section class="settings-section">
+        <div class="section-header">
+            <h3>Tag Summarization Configurations</h3>
+            <button id="addTagConfigBtn" class="btn-primary">Add New Tag Configuration</button>
+        </div>
+
+        <div id="tagConfigList" class="config-list">
+            <p class="loading">Loading configurations...</p>
+        </div>
+    </section>
+
+    <!-- Section 2: Default Configuration -->
+    <section class="settings-section">
+        <div class="section-header">
+            <h3>Default Configuration</h3>
+            <button id="editDefaultBtn" class="btn-secondary">Edit Default</button>
+        </div>
+        <p class="section-description">Used when transcriptions have no matching tag configurations.</p>
+
+        <div id="defaultConfig" class="config-card">
+            <p class="loading">Loading...</p>
+        </div>
+    </section>
+
+    <!-- Section 3: API Keys Management -->
+    <section class="settings-section">
+        <div class="section-header">
+            <h3>API Key Management</h3>
+            <button id="addApiKeyBtn" class="btn-primary">Add API Key</button>
+        </div>
+
+        <div id="apiKeyList" class="config-list">
+            <p class="loading">Loading API keys...</p>
+        </div>
+    </section>
+
+    <!-- Tag Config Modal -->
+    <div id="tagConfigModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tagConfigModalTitle">Add Tag Configuration</h3>
+                <button class="close-btn" onclick="closeTagConfigModal()">&times;</button>
+            </div>
+            <form id="tagConfigForm">
+                <input type="hidden" id="tagConfigMode" value="create">
+                <input type="hidden" id="tagConfigOriginalName" value="">
+
+                <div class="form-group">
+                    <label for="tagName">Tag Name</label>
+                    <input type="text" id="tagName" name="tag_name" placeholder="e.g., supersummarize" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tagApiEndpoint">API Endpoint</label>
+                    <input type="url" id="tagApiEndpoint" name="api_endpoint" placeholder="http://localhost:11434/v1" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tagModel">Model</label>
+                    <input type="text" id="tagModel" name="model" placeholder="llama2" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tagApiKeyRef">API Key Reference</label>
+                    <select id="tagApiKeyRef" name="api_key_ref">
+                        <option value="">None</option>
+                        <!-- Options populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tagSystemPrompt">System Prompt</label>
+                    <textarea id="tagSystemPrompt" name="system_prompt" rows="4" required></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeTagConfigModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Default Config Modal -->
+    <div id="defaultConfigModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Default Configuration</h3>
+                <button class="close-btn" onclick="closeDefaultConfigModal()">&times;</button>
+            </div>
+            <form id="defaultConfigForm">
+                <div class="form-group">
+                    <label for="defaultApiEndpoint">API Endpoint</label>
+                    <input type="url" id="defaultApiEndpoint" name="api_endpoint" placeholder="http://localhost:11434/v1" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="defaultModel">Model</label>
+                    <input type="text" id="defaultModel" name="model" placeholder="llama2" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="defaultApiKeyRef">API Key Reference</label>
+                    <select id="defaultApiKeyRef" name="api_key_ref">
+                        <option value="">None</option>
+                        <!-- Options populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="defaultSystemPrompt">System Prompt</label>
+                    <textarea id="defaultSystemPrompt" name="system_prompt" rows="4" required></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeDefaultConfigModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="apiKeyModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="apiKeyModalTitle">Add API Key</h3>
+                <button class="close-btn" onclick="closeApiKeyModal()">&times;</button>
+            </div>
+            <form id="apiKeyForm">
+                <input type="hidden" id="apiKeyMode" value="create">
+
+                <div class="form-group">
+                    <label for="apiKeyName">Key Name</label>
+                    <input type="text" id="apiKeyName" name="key_name" placeholder="e.g., openai" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="apiKeyValue">API Key Value</label>
+                    <input type="password" id="apiKeyValue" name="key_value" placeholder="sk-..." required>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeApiKeyModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast" style="display: none;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/settings.js"></script>
+{% endblock %}
