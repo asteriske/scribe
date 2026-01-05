@@ -55,11 +55,27 @@ class Transcription(Base):
     # Search
     full_text = Column(Text)
 
+    # Tags
+    tags = Column(Text, nullable=False, default='[]')
+
     def __repr__(self):
         return f"<Transcription {self.id} ({self.status})>"
 
     def to_dict(self):
         """Convert to dictionary for API responses."""
+        import json
+
+        # Parse tags from JSON if it's a string
+        tags_list = []
+        if self.tags:
+            if isinstance(self.tags, str):
+                try:
+                    tags_list = json.loads(self.tags)
+                except (json.JSONDecodeError, TypeError):
+                    tags_list = []
+            elif isinstance(self.tags, list):
+                tags_list = self.tags
+
         return {
             'id': self.id,
             'source': {
@@ -79,7 +95,8 @@ class Transcription(Base):
             'language': self.language,
             'word_count': self.word_count,
             'segments_count': self.segments_count,
-            'error': self.error_message
+            'error': self.error_message,
+            'tags': tags_list
         }
 
 

@@ -1,0 +1,173 @@
+/* Tag Chip Styles */
+.tag-chip {
+    display: inline-block;
+    padding: 4px 8px;
+    margin: 2px;
+    background: #e0e0e0;
+    border-radius: 12px;
+    font-size: 0.85em;
+    color: #333;
+}
+
+.tag-chip-remove {
+    margin-left: 6px;
+    cursor: pointer;
+    color: #666;
+    font-weight: bold;
+}
+
+.tag-chip-remove:hover {
+    color: #d32f2f;
+}
+
+/* Tag Input Container */
+.tag-input-container {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    min-height: 38px;
+    background: white;
+    position: relative;
+}
+
+.tag-input-container:focus-within {
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.tag-input-field {
+    border: none;
+    outline: none;
+    flex-grow: 1;
+    min-width: 120px;
+    padding: 4px;
+    font-size: 0.9em;
+}
+
+/* Autocomplete Dropdown */
+.tag-autocomplete {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    min-width: 200px;
+    margin-top: 2px;
+}
+
+.tag-autocomplete-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.tag-autocomplete-item:hover,
+.tag-autocomplete-item.selected {
+    background: #f5f5f5;
+}
+
+.tag-autocomplete-item mark {
+    background: #ffeb3b;
+    font-weight: bold;
+}
+
+/* Tags Display Section */
+.transcription-tags {
+    margin-top: 8px;
+}
+
+.tags-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.tags-display .tag-chip {
+    cursor: default;
+}
+
+/* Edit Mode */
+.tags-edit {
+    margin-top: 8px;
+}
+
+.tags-edit .btn-save,
+.tags-edit .btn-cancel {
+    padding: 6px 12px;
+    margin-right: 8px;
+    font-size: 0.85em;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.tags-edit .btn-save {
+    background: #4CAF50;
+    color: white;
+    border: none;
+}
+
+.tags-edit .btn-save:hover {
+    background: #45a049;
+}
+
+.tags-edit .btn-cancel {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.tags-edit .btn-cancel:hover {
+    background: #e0e0e0;
+}
+
+/* Form Group for Tags */
+.form-group.tags-group {
+    margin-bottom: 20px;
+}
+
+.form-group.tags-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+/* Edit Button for Tags */
+.btn-edit-tags {
+    margin-left: 8px;
+    padding: 4px 8px;
+    font-size: 0.8em;
+    background: transparent;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+}
+
+.btn-edit-tags:hover {
+    background: #f5f5f5;
+    color: #333;
+}
+
+/* No tags placeholder */
+.no-tags {
+    color: #888;
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+/* Tags section header */
+.transcription-tags-section h3 {
+    margin-bottom: 8px;
+    font-size: 1em;
+    color: #555;
+}

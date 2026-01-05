@@ -40,6 +40,10 @@ async def lifespan(app: FastAPI):
     init_db(engine)
     logger.info("Database initialized")
 
+    # Run database migrations
+    from frontend.core.migrations import run_migrations
+    run_migrations(engine)
+
     # Start cleanup task
     cleanup_service = CleanupService()
     cleanup_task = asyncio.create_task(run_periodic_cleanup(cleanup_service))

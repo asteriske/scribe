@@ -1,5 +1,6 @@
 """API routes for frontend service."""
 
+import json
 import logging
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Request
@@ -14,12 +15,14 @@ from frontend.api.models import (
     TranscribeRequest,
     TranscriptionResponse,
     TranscriptionListResponse,
-    ErrorResponse
+    ErrorResponse,
+    UpdateTagsRequest
 )
 from frontend.core.database import get_db
 from frontend.core.models import Transcription
 from frontend.services.orchestrator import Orchestrator
 from frontend.utils.url_parser import parse_url
+from frontend.utils.tag_validator import normalize_tags
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,33 @@ templates.env.filters['format_time'] = format_time
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy"}
+
+
+@router.get("/tags")
+async def get_all_tags(db: Session = Depends(get_db)):
+    """
+    Get all unique tags used across all transcriptions.
+
+    Returns tags sorted alphabetically.
+    """
+    # Get all transcriptions with tags
+    transcriptions = db.query(Transcription).all()
+
+    # Collect all unique tags
+    all_tags = set()
+    for t in transcriptions:
+        if t.tags:
+            try:
+                if isinstance(t.tags, str):
+                    tags = json.loads(t.tags)
+                else:
+                    tags = t.tags
+                all_tags.update(tags)
+            except (json.JSONDecodeError, TypeError):
+                continue
+
+    # Return sorted list
+    return {"tags": sorted(all_tags)}
 
 
 @router.post(
@@ -79,13 +109,17 @@ async def transcribe_url(
                 ))
             )
 
+        # Normalize tags
+        normalized_tags = normalize_tags(request.tags) if request.tags else []
+
         # Create pending record
         transcription = Transcription(
             id=url_info.id,
             source_type=url_info.source_type.value,
             source_url=request.url,
             status='pending',
-            progress=0
+            progress=0,
+            tags=json.dumps(normalized_tags)
         )
         db.add(transcription)
         db.commit()
@@ -173,6 +207,47 @@ async def get_transcription(transcription_id: str, db: Session = Depends(get_db)
 
     if not transcription:
         raise HTTPException(status_code=404, detail="Transcription not found")
+
+    return TranscriptionResponse(**transcription.to_dict())
+
+
+@router.patch(
+    "/transcriptions/{transcription_id}",
+    response_model=TranscriptionResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Transcription not found"},
+        400: {"model": ErrorResponse, "description": "Invalid tags"}
+    }
+)
+async def update_transcription_tags(
+    transcription_id: str,
+    request: UpdateTagsRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Update tags for a transcription.
+
+    Replaces existing tags completely.
+    """
+    # Find transcription
+    transcription = db.query(Transcription).filter_by(id=transcription_id).first()
+    if not transcription:
+        raise HTTPException(status_code=404, detail="Transcription not found")
+
+    # Normalize and validate tags
+    normalized_tags = normalize_tags(request.tags)
+
+    # Check if any tags were invalid (filtered out)
+    if request.tags and not normalized_tags:
+        raise HTTPException(
+            status_code=400,
+            detail="All provided tags are invalid. Tags must be lowercase alphanumeric with hyphens/underscores only."
+        )
+
+    # Update tags
+    transcription.tags = json.dumps(normalized_tags)
+    db.commit()
+    db.refresh(transcription)
 
     return TranscriptionResponse(**transcription.to_dict())
 
