@@ -14,7 +14,8 @@ from frontend.api.models import (
     TranscribeRequest,
     TranscriptionResponse,
     TranscriptionListResponse,
-    ErrorResponse
+    ErrorResponse,
+    UpdateTagsRequest
 )
 from frontend.core.database import get_db
 from frontend.core.models import Transcription
@@ -202,6 +203,50 @@ async def get_transcription(transcription_id: str, db: Session = Depends(get_db)
 
     if not transcription:
         raise HTTPException(status_code=404, detail="Transcription not found")
+
+    return TranscriptionResponse(**transcription.to_dict())
+
+
+@router.patch(
+    "/transcriptions/{transcription_id}",
+    response_model=TranscriptionResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Transcription not found"},
+        400: {"model": ErrorResponse, "description": "Invalid tags"}
+    }
+)
+async def update_transcription_tags(
+    transcription_id: str,
+    request: UpdateTagsRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Update tags for a transcription.
+
+    Replaces existing tags completely.
+    """
+    import json
+    from frontend.utils.tag_validator import normalize_tags
+
+    # Find transcription
+    transcription = db.query(Transcription).filter_by(id=transcription_id).first()
+    if not transcription:
+        raise HTTPException(status_code=404, detail="Transcription not found")
+
+    # Normalize and validate tags
+    normalized_tags = normalize_tags(request.tags)
+
+    # Check if any tags were invalid (filtered out)
+    if request.tags and not normalized_tags:
+        raise HTTPException(
+            status_code=400,
+            detail="All provided tags are invalid. Tags must be lowercase alphanumeric with hyphens/underscores only."
+        )
+
+    # Update tags
+    transcription.tags = json.dumps(normalized_tags)
+    db.commit()
+    db.refresh(transcription)
 
     return TranscriptionResponse(**transcription.to_dict())
 
