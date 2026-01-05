@@ -215,3 +215,74 @@ def test_update_transcription_tags_invalid(client, db_session):
 
     assert response.status_code == 400
     assert "invalid" in response.json()["detail"].lower()
+
+
+def test_transcribe_url_with_tags(client, db_session, monkeypatch):
+    """Test POST /api/transcribe accepts and stores tags."""
+    import json
+    from unittest.mock import MagicMock
+    from frontend.core.models import Transcription
+    from frontend.utils.url_parser import URLInfo, SourceType
+    import frontend.api.routes as routes
+
+    # Mock parse_url
+    mock_url_info = URLInfo(
+        id="youtube_test123",
+        source_type=SourceType.YOUTUBE,
+        original_url="https://youtube.com/watch?v=new"
+    )
+    monkeypatch.setattr(routes, 'parse_url', lambda x: mock_url_info)
+
+    # Mock Orchestrator
+    mock_orchestrator = MagicMock()
+    monkeypatch.setattr(routes, 'Orchestrator', lambda: mock_orchestrator)
+
+    response = client.post(
+        "/api/transcribe",
+        json={
+            "url": "https://youtube.com/watch?v=new",
+            "tags": ["kindle", "work"]
+        }
+    )
+
+    assert response.status_code == 202
+    data = response.json()
+    assert data["tags"] == ["kindle", "work"]
+
+    # Verify in database
+    t = db_session.query(Transcription).filter_by(id="youtube_test123").first()
+    assert t is not None
+    assert json.loads(t.tags) == ["kindle", "work"]
+
+
+def test_transcribe_url_normalizes_tags(client, db_session, monkeypatch):
+    """Test POST /api/transcribe normalizes tags."""
+    import json
+    from unittest.mock import MagicMock
+    from frontend.core.models import Transcription
+    from frontend.utils.url_parser import URLInfo, SourceType
+    import frontend.api.routes as routes
+
+    # Mock parse_url
+    mock_url_info = URLInfo(
+        id="youtube_normalize",
+        source_type=SourceType.YOUTUBE,
+        original_url="https://youtube.com/watch?v=normalize"
+    )
+    monkeypatch.setattr(routes, 'parse_url', lambda x: mock_url_info)
+
+    # Mock Orchestrator
+    mock_orchestrator = MagicMock()
+    monkeypatch.setattr(routes, 'Orchestrator', lambda: mock_orchestrator)
+
+    response = client.post(
+        "/api/transcribe",
+        json={
+            "url": "https://youtube.com/watch?v=normalize",
+            "tags": ["Kindle", " FORMAT ", "Kindle"]
+        }
+    )
+
+    assert response.status_code == 202
+    data = response.json()
+    assert data["tags"] == ["kindle", "format"]

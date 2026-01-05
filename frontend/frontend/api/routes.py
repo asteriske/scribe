@@ -94,6 +94,9 @@ async def transcribe_url(
 
     The transcription job will be processed in the background.
     """
+    import json
+    from frontend.utils.tag_validator import normalize_tags
+
     try:
         # Parse and validate URL
         url_info = parse_url(request.url)
@@ -109,13 +112,17 @@ async def transcribe_url(
                 ))
             )
 
+        # Normalize tags
+        normalized_tags = normalize_tags(request.tags) if request.tags else []
+
         # Create pending record
         transcription = Transcription(
             id=url_info.id,
             source_type=url_info.source_type.value,
             source_url=request.url,
             status='pending',
-            progress=0
+            progress=0,
+            tags=json.dumps(normalized_tags)
         )
         db.add(transcription)
         db.commit()
