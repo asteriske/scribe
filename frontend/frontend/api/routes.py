@@ -1,5 +1,6 @@
 """API routes for frontend service."""
 
+import json
 import logging
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Request
@@ -21,6 +22,7 @@ from frontend.core.database import get_db
 from frontend.core.models import Transcription
 from frontend.services.orchestrator import Orchestrator
 from frontend.utils.url_parser import parse_url
+from frontend.utils.tag_validator import normalize_tags
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +55,6 @@ async def get_all_tags(db: Session = Depends(get_db)):
 
     Returns tags sorted alphabetically.
     """
-    import json
-
     # Get all transcriptions with tags
     transcriptions = db.query(Transcription).all()
 
@@ -94,9 +94,6 @@ async def transcribe_url(
 
     The transcription job will be processed in the background.
     """
-    import json
-    from frontend.utils.tag_validator import normalize_tags
-
     try:
         # Parse and validate URL
         url_info = parse_url(request.url)
@@ -232,9 +229,6 @@ async def update_transcription_tags(
 
     Replaces existing tags completely.
     """
-    import json
-    from frontend.utils.tag_validator import normalize_tags
-
     # Find transcription
     transcription = db.query(Transcription).filter_by(id=transcription_id).first()
     if not transcription:
