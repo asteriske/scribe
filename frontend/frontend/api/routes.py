@@ -45,6 +45,35 @@ async def health_check():
     return {"status": "healthy"}
 
 
+@router.get("/tags")
+async def get_all_tags(db: Session = Depends(get_db)):
+    """
+    Get all unique tags used across all transcriptions.
+
+    Returns tags sorted alphabetically.
+    """
+    import json
+
+    # Get all transcriptions with tags
+    transcriptions = db.query(Transcription).all()
+
+    # Collect all unique tags
+    all_tags = set()
+    for t in transcriptions:
+        if t.tags:
+            try:
+                if isinstance(t.tags, str):
+                    tags = json.loads(t.tags)
+                else:
+                    tags = t.tags
+                all_tags.update(tags)
+            except (json.JSONDecodeError, TypeError):
+                continue
+
+    # Return sorted list
+    return {"tags": sorted(all_tags)}
+
+
 @router.post(
     "/transcribe",
     response_model=TranscriptionResponse,
