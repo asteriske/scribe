@@ -126,3 +126,6 @@ transcriptions/
 *.backup
 *.bak
 *.tmp
+
+# Emailer secrets
+emailer/.secrets
