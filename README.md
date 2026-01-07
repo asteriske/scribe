@@ -4,14 +4,16 @@ A distributed transcription system for YouTube videos and podcasts, leveraging M
 
 ## Overview
 
-Scribe consists of two independent services:
+Scribe consists of three independent services:
 
 1. **Transcriber Service** - MLX-powered transcription engine (runs on macOS with Apple Silicon)
 2. **Frontend Service** - Web interface and job orchestration (runs anywhere, including Intel-based systems)
+3. **Emailer Service** - Email-based job submission (monitors IMAP folder, sends results via SMTP)
 
 ## Features
 
 - Web-based interface for submitting URLs
+- Email-based job submission (forward URLs to get transcriptions back)
 - Support for YouTube videos, Apple Podcasts, and direct audio URLs
 - MLX-accelerated Whisper transcription on Apple Silicon
 - SQLite database for metadata and job tracking
@@ -47,6 +49,16 @@ Scribe consists of two independent services:
 │  │  - HTTP API                   │  │
 │  └───────────────────────────────┘  │
 └─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  Emailer Service (Optional)         │
+│  ┌───────────────────────────────┐  │
+│  │  - IMAP folder monitoring     │  │
+│  │  - URL extraction from emails │  │
+│  │  - Frontend API integration   │  │
+│  │  - SMTP result delivery       │  │
+│  └───────────────────────────────┘  │
+└─────────────────────────────────────┘
 ```
 
 ## Project Structure
@@ -55,6 +67,7 @@ Scribe consists of two independent services:
 scribe/
 ├── transcriber/          # MLX transcription service (macOS)
 ├── frontend/             # Web UI and orchestrator (any platform)
+├── emailer/              # Email-based job submission (optional)
 ├── data/                 # Shared data directory
 │   ├── transcriptions/  # JSON outputs
 │   ├── cache/audio/     # Temporary audio files
@@ -140,6 +153,13 @@ Key settings:
 - yt-dlp (media downloader)
 - Jinja2 (templates)
 - WebSockets (real-time updates)
+
+**Emailer:**
+- aioimaplib (async IMAP client)
+- aiosmtplib (async SMTP client)
+- httpx (async HTTP client)
+- pydantic-settings (configuration)
+- BeautifulSoup4 (HTML parsing)
 
 ## Design Decisions
 
