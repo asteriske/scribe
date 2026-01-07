@@ -23,6 +23,7 @@ class TestJobProcessor:
                 duration_seconds=120,
             )
         )
+        mock_frontend.get_transcript_text = AsyncMock(return_value="Hello world")
         mock_frontend.generate_summary = AsyncMock(return_value="This is a summary.")
 
         processor = JobProcessor(frontend_client=mock_frontend)

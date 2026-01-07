@@ -24,7 +24,7 @@ class TranscriptionResult:
 class FrontendClient:
     """Client for communicating with the frontend API."""
 
-    def __init__(self, base_url: str, timeout: float = 30.0):
+    def __init__(self, base_url: str, timeout: float = 120.0):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
@@ -89,6 +89,23 @@ class FrontendClient:
                 result.error = data.get("error", "Unknown error")
 
             return result
+
+    async def get_transcript_text(self, transcription_id: str) -> str:
+        """
+        Get the full transcript text.
+
+        Args:
+            transcription_id: ID of the transcription
+
+        Returns:
+            Full transcript text
+        """
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.get(
+                f"{self.base_url}/api/transcriptions/{transcription_id}/export/txt"
+            )
+            response.raise_for_status()
+            return response.text
 
     async def generate_summary(self, transcription_id: str) -> str:
         """

@@ -47,14 +47,10 @@ class SmtpClient:
         msg["To"] = to_addr
         msg.set_content(body)
 
-        smtp = SMTP(hostname=self.host, port=self.port)
+        smtp = SMTP(hostname=self.host, port=self.port, use_tls=self.use_tls)
 
         try:
             await smtp.connect()
-
-            if self.use_tls:
-                await smtp.starttls()
-
             await smtp.login(self.user, self.password)
             await smtp.send_message(msg)
 

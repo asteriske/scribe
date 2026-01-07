@@ -15,14 +15,13 @@ class TestSmtpClient:
             mock_instance = AsyncMock()
             mock_smtp.return_value = mock_instance
             mock_instance.connect = AsyncMock()
-            mock_instance.starttls = AsyncMock()
             mock_instance.login = AsyncMock()
             mock_instance.send_message = AsyncMock()
             mock_instance.quit = AsyncMock()
 
             client = SmtpClient(
                 host="smtp.test.com",
-                port=587,
+                port=465,
                 user="test@test.com",
                 password="testpass",
                 use_tls=True,
@@ -35,6 +34,8 @@ class TestSmtpClient:
                 body="Test Body",
             )
 
+            # Verify SMTP was created with use_tls
+            mock_smtp.assert_called_once_with(hostname="smtp.test.com", port=465, use_tls=True)
             mock_instance.send_message.assert_called_once()
             call_args = mock_instance.send_message.call_args
             msg = call_args[0][0]
@@ -68,4 +69,5 @@ class TestSmtpClient:
                 body="Body",
             )
 
-            mock_instance.starttls.assert_not_called()
+            # Verify SMTP was created without TLS
+            mock_smtp.assert_called_once_with(hostname="smtp.test.com", port=25, use_tls=False)

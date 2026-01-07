@@ -57,7 +57,7 @@ class TestEmailerService:
         )
 
         email = EmailMessage(
-            uid="123",
+            msg_num="123",
             sender="user@example.com",
             subject="Please transcribe",
             body_text="https://youtube.com/watch?v=abc123",
@@ -92,7 +92,7 @@ class TestEmailerService:
         service.smtp.send_email = AsyncMock()
 
         email = EmailMessage(
-            uid="123",
+            msg_num="123",
             sender="user@example.com",
             subject="Hello",
             body_text="No URLs here",
@@ -143,7 +143,7 @@ class TestEmailerService:
         )
 
         email = EmailMessage(
-            uid="123",
+            msg_num="123",
             sender="user@example.com",
             subject="Two videos",
             body_text="https://youtube.com/watch?v=abc https://youtube.com/watch?v=def",

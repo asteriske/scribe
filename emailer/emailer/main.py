@@ -91,7 +91,7 @@ class EmailerService:
             tasks = []
             for email in emails:
                 # Mark as seen immediately
-                await self.imap.mark_seen(email.uid)
+                await self.imap.mark_seen(email.msg_num)
                 # Process concurrently with semaphore
                 task = asyncio.create_task(self._process_email_with_semaphore(email))
                 tasks.append(task)
@@ -109,7 +109,7 @@ class EmailerService:
 
     async def _process_email(self, email: EmailMessage) -> None:
         """Process a single email."""
-        logger.info(f"Processing email {email.uid} from {email.sender}")
+        logger.info(f"Processing email {email.msg_num} from {email.sender}")
 
         # Extract URLs from both text and HTML
         urls = []
@@ -136,9 +136,9 @@ class EmailerService:
         # Determine final folder
         any_success = any(r.success for r in results)
         if any_success:
-            await self.imap.move_to_folder(email.uid, self.settings.imap_folder_done)
+            await self.imap.move_to_folder(email.msg_num, self.settings.imap_folder_done)
         else:
-            await self.imap.move_to_folder(email.uid, self.settings.imap_folder_error)
+            await self.imap.move_to_folder(email.msg_num, self.settings.imap_folder_error)
 
     async def _handle_no_urls(self, email: EmailMessage) -> None:
         """Handle email with no transcribable URLs."""
@@ -151,8 +151,8 @@ class EmailerService:
             body=body,
         )
 
-        await self.imap.move_to_folder(email.uid, self.settings.imap_folder_error)
-        logger.info(f"No URLs in email {email.uid}, notified sender")
+        await self.imap.move_to_folder(email.msg_num, self.settings.imap_folder_error)
+        logger.info(f"No URLs in email {email.msg_num}, notified sender")
 
     async def _send_result_email(self, email: EmailMessage, result: JobResult) -> None:
         """Send result or error email based on job result."""
