@@ -60,6 +60,55 @@ def test_export_to_txt(temp_storage):
     assert "This is a test" in txt_content
 
 
+def test_export_to_txt_paragraph_formatting(temp_storage):
+    """Test that TXT export combines fragments and creates paragraphs at gaps"""
+    transcription_data = {
+        "transcription": {
+            "segments": [
+                # First paragraph - fragments combined into sentences
+                {"id": 0, "start": 0.0, "end": 1.5, "text": "So today we're going to talk about"},
+                {"id": 1, "start": 1.5, "end": 3.0, "text": "machine learning."},
+                {"id": 2, "start": 3.0, "end": 4.5, "text": "It's very interesting."},
+                # 3 second gap here - should start new paragraph
+                {"id": 3, "start": 7.5, "end": 9.0, "text": "Let me start with the basics."},
+            ]
+        }
+    }
+
+    temp_storage.save_transcription("test_paragraphs", transcription_data)
+    txt_content = temp_storage.export_to_txt("test_paragraphs")
+
+    # Should have two paragraphs separated by blank line
+    paragraphs = txt_content.split('\n\n')
+    assert len(paragraphs) == 2
+
+    # First paragraph combines fragments
+    assert paragraphs[0] == "So today we're going to talk about machine learning. It's very interesting."
+
+    # Second paragraph after the gap
+    assert paragraphs[1] == "Let me start with the basics."
+
+
+def test_export_to_txt_no_paragraph_break_small_gap(temp_storage):
+    """Test that small gaps (<2s) don't create paragraph breaks"""
+    transcription_data = {
+        "transcription": {
+            "segments": [
+                {"id": 0, "start": 0.0, "end": 2.0, "text": "First sentence."},
+                # 1 second gap - should NOT start new paragraph
+                {"id": 1, "start": 3.0, "end": 5.0, "text": "Second sentence."},
+            ]
+        }
+    }
+
+    temp_storage.save_transcription("test_small_gap", transcription_data)
+    txt_content = temp_storage.export_to_txt("test_small_gap")
+
+    # Should be one paragraph (no double newline)
+    assert '\n\n' not in txt_content
+    assert txt_content == "First sentence. Second sentence."
+
+
 def test_export_to_srt(temp_storage):
     """Test exporting transcription to SRT format"""
     transcription_data = {
