@@ -104,6 +104,10 @@ class StorageManager:
         """
         Export transcription to plain text format.
 
+        Combines segments into readable paragraphs:
+        - Fragments joined with spaces until sentence-ending punctuation (. ? !)
+        - Paragraph breaks inserted at 2+ second gaps between segments
+
         Args:
             transcription_id: Transcription ID
 
@@ -115,8 +119,31 @@ class StorageManager:
             return None
 
         segments = data.get('transcription', {}).get('segments', [])
-        lines = [segment['text'].strip() for segment in segments]
-        return '\n'.join(lines)
+        if not segments:
+            return ''
+
+        paragraphs = []
+        current_sentence = []
+
+        for i, segment in enumerate(segments):
+            text = segment['text'].strip()
+            current_sentence.append(text)
+
+            # Check if sentence ends
+            if text and text[-1] in '.?!':
+                # Check for paragraph break (2+ second gap to next segment)
+                if i + 1 < len(segments):
+                    gap = segments[i + 1]['start'] - segment['end']
+                    if gap >= 2.0:
+                        # End paragraph
+                        paragraphs.append(' '.join(current_sentence))
+                        current_sentence = []
+
+        # Don't forget remaining text
+        if current_sentence:
+            paragraphs.append(' '.join(current_sentence))
+
+        return '\n\n'.join(paragraphs)
 
     def export_to_srt(self, transcription_id: str) -> Optional[str]:
         """
