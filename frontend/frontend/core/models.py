@@ -58,6 +58,9 @@ class Transcription(Base):
     # Tags
     tags = Column(Text, nullable=False, default='[]')
 
+    # Relationships
+    summaries = relationship("Summary", back_populates="transcription", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Transcription {self.id} ({self.status})>"
 
@@ -129,7 +132,7 @@ class Summary(Base):
     completion_tokens = Column(Integer)
 
     # Relationship
-    transcription = relationship("Transcription", backref="summaries")
+    transcription = relationship("Transcription", back_populates="summaries")
 
     def __repr__(self):
         return f"<Summary {self.id} for {self.transcription_id}>"
