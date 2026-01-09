@@ -12,12 +12,12 @@
       "api_key_ref": "openai",
       "system_prompt": "Provide a detailed, nuanced summary with key insights from the following transcription. Include main themes, important details, and notable quotes."
     },
-    "highlevel": {
-      "api_endpoint": "http://localhost:11434/v1",
-      "model": "llama2",
+    "kindle": {
+      "api_endpoint": "http://10.100.2.50:11434/v1",
+      "model": "openai/gpt-oss-20b",
       "api_key_ref": null,
-      "system_prompt": "Provide a brief high-level overview of the following transcription in 2-3 sentences.",
-      "destination_email": null
+      "system_prompt": "Summarize the following podcast subscription. Pay special attention to main topics, questions asked and hot takes or counter-intuitive opinions."
+      "destination_email": "kindle@patrickmccarthy.cc" 
     }
   }
 }
