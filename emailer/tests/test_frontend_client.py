@@ -145,3 +145,51 @@ class TestFrontendClient:
                 "http://localhost:8000/api/transcribe",
                 json={"url": "https://example.com/audio.mp3", "tags": ["podcast"]},
             )
+
+    @pytest.mark.asyncio
+    async def test_get_tag_config_returns_config(self):
+        """Test that get_tag_config returns tag configuration."""
+        with patch("emailer.frontend_client.httpx.AsyncClient") as mock_client:
+            mock_instance = AsyncMock()
+            mock_client.return_value.__aenter__.return_value = mock_instance
+            mock_instance.get = AsyncMock(
+                return_value=MagicMock(
+                    status_code=200,
+                    json=lambda: {
+                        "name": "kindle",
+                        "api_endpoint": "http://test.com/v1",
+                        "model": "test-model",
+                        "api_key_ref": None,
+                        "system_prompt": "Test",
+                        "destination_email": "kindle@example.com"
+                    },
+                )
+            )
+
+            client = FrontendClient(base_url="http://localhost:8000")
+            result = await client.get_tag_config("kindle")
+
+            assert result is not None
+            assert result["name"] == "kindle"
+            assert result["destination_email"] == "kindle@example.com"
+
+    @pytest.mark.asyncio
+    async def test_get_tag_config_returns_none_on_404(self):
+        """Test that get_tag_config returns None for unknown tag."""
+        with patch("emailer.frontend_client.httpx.AsyncClient") as mock_client:
+            mock_instance = AsyncMock()
+            mock_client.return_value.__aenter__.return_value = mock_instance
+            mock_response = MagicMock(status_code=404)
+            mock_response.raise_for_status = MagicMock(
+                side_effect=httpx.HTTPStatusError(
+                    "Not Found",
+                    request=MagicMock(),
+                    response=mock_response,
+                )
+            )
+            mock_instance.get = AsyncMock(return_value=mock_response)
+
+            client = FrontendClient(base_url="http://localhost:8000")
+            result = await client.get_tag_config("nonexistent")
+
+            assert result is None

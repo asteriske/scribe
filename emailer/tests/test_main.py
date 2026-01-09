@@ -48,6 +48,7 @@ class TestEmailerService:
         service.processor = AsyncMock()
         service.processor.frontend = AsyncMock()
         service.processor.frontend.get_tags = AsyncMock(return_value=set())
+        service.processor.frontend.get_tag_config = AsyncMock(return_value=None)
         service.processor.process_url = AsyncMock(
             return_value=JobResult(
                 url="https://youtube.com/watch?v=abc123",
@@ -74,7 +75,7 @@ class TestEmailerService:
             "https://youtube.com/watch?v=abc123", tag="email"
         )
 
-        # Should have sent success email
+        # Should have sent success email (to default since no tag destination)
         service.smtp.send_email.assert_called()
         call_args = service.smtp.send_email.call_args
         assert call_args.kwargs["to_addr"] == "results@test.com"
@@ -127,6 +128,7 @@ class TestEmailerService:
         service.processor = AsyncMock()
         service.processor.frontend = AsyncMock()
         service.processor.frontend.get_tags = AsyncMock(return_value=set())
+        service.processor.frontend.get_tag_config = AsyncMock(return_value=None)
 
         # First URL succeeds, second fails
         service.processor.process_url = AsyncMock(
@@ -185,6 +187,7 @@ class TestEmailerService:
         service.processor.frontend.get_tags = AsyncMock(
             return_value={"podcast", "interview"}
         )
+        service.processor.frontend.get_tag_config = AsyncMock(return_value=None)
         service.processor.process_url = AsyncMock(
             return_value=JobResult(
                 url="https://example.com/audio.mp3",
@@ -213,3 +216,120 @@ class TestEmailerService:
         service.processor.process_url.assert_called_once_with(
             "https://example.com/audio.mp3", tag="podcast"
         )
+
+
+class TestSendResultEmail:
+    """Tests for _send_result_email destination resolution."""
+
+    @pytest.fixture
+    def mock_settings(self):
+        """Create mock settings."""
+        settings = MagicMock()
+        settings.imap_host = "imap.test.com"
+        settings.imap_port = 993
+        settings.imap_user = "test@test.com"
+        settings.imap_password = "testpass"
+        settings.imap_use_ssl = True
+        settings.smtp_host = "smtp.test.com"
+        settings.smtp_port = 587
+        settings.smtp_user = "test@test.com"
+        settings.smtp_password = "testpass"
+        settings.smtp_use_tls = True
+        settings.imap_folder_inbox = "ToScribe"
+        settings.imap_folder_done = "ScribeDone"
+        settings.imap_folder_error = "ScribeError"
+        settings.poll_interval_seconds = 300
+        settings.max_concurrent_jobs = 3
+        settings.result_email_address = "default@example.com"
+        settings.from_email_address = "scribe@example.com"
+        settings.frontend_url = "http://localhost:8000"
+        settings.default_tag = "email"
+        return settings
+
+    @pytest.mark.asyncio
+    async def test_uses_tag_destination_email_when_set(self, mock_settings):
+        """Test that tag's destination_email is used when available."""
+        from emailer.job_processor import JobResult
+
+        service = EmailerService(mock_settings)
+        service.smtp = AsyncMock()
+
+        # Tag config with destination_email
+        tag_config = {
+            "name": "kindle",
+            "destination_email": "kindle@example.com"
+        }
+
+        mock_email = MagicMock(sender="user@test.com", subject="Test")
+        result = JobResult(
+            url="https://youtube.com/test",
+            success=True,
+            title="Test Video",
+            summary="Test summary",
+            transcript="Test transcript",
+            duration_seconds=120,
+        )
+
+        await service._send_result_email(mock_email, result, tag_config=tag_config)
+
+        # Verify email was sent to tag's destination
+        service.smtp.send_email.assert_called_once()
+        call_kwargs = service.smtp.send_email.call_args
+        assert call_kwargs.kwargs["to_addr"] == "kindle@example.com"
+
+    @pytest.mark.asyncio
+    async def test_uses_default_when_tag_destination_not_set(self, mock_settings):
+        """Test fallback to default when tag has no destination_email."""
+        from emailer.job_processor import JobResult
+
+        service = EmailerService(mock_settings)
+        service.smtp = AsyncMock()
+
+        # Tag config without destination_email
+        tag_config = {
+            "name": "podcast",
+            "destination_email": None
+        }
+
+        mock_email = MagicMock(sender="user@test.com", subject="Test")
+        result = JobResult(
+            url="https://youtube.com/test",
+            success=True,
+            title="Test Video",
+            summary="Test summary",
+            transcript="Test transcript",
+            duration_seconds=120,
+        )
+
+        await service._send_result_email(mock_email, result, tag_config=tag_config)
+
+        # Verify email was sent to default destination
+        service.smtp.send_email.assert_called_once()
+        call_kwargs = service.smtp.send_email.call_args
+        assert call_kwargs.kwargs["to_addr"] == "default@example.com"
+
+    @pytest.mark.asyncio
+    async def test_uses_default_when_no_tag_config(self, mock_settings):
+        """Test fallback to default when no tag config available."""
+        from emailer.job_processor import JobResult
+
+        service = EmailerService(mock_settings)
+        service.smtp = AsyncMock()
+
+        mock_email = MagicMock(sender="user@test.com", subject="Test")
+        result = JobResult(
+            url="https://youtube.com/test",
+            success=True,
+            title="Test Video",
+            summary="Test summary",
+            transcript="Test transcript",
+            duration_seconds=120,
+        )
+
+        # No tag config passed (defaults to None)
+        await service._send_result_email(mock_email, result)
+
+        # Verify email was sent to default destination
+        service.smtp.send_email.assert_called_once()
+        call_kwargs = service.smtp.send_email.call_args
+        assert call_kwargs.kwargs["to_addr"] == "default@example.com"

@@ -141,12 +141,19 @@ class EmailerService:
         )
         logger.info(f"Resolved tag '{tag}' from subject: {email.subject}")
 
+        # Fetch tag config for destination email resolution
+        tag_config = None
+        try:
+            tag_config = await self.processor.frontend.get_tag_config(tag)
+        except Exception as e:
+            logger.warning(f"Failed to fetch tag config for '{tag}': {e}")
+
         # Process each URL
         results = []
         for url in urls:
             result = await self.processor.process_url(url, tag=tag)
             results.append(result)
-            await self._send_result_email(email, result)
+            await self._send_result_email(email, result, tag_config=tag_config)
 
         # Determine final folder and move
         any_success = any(r.success for r in results)
@@ -181,7 +188,9 @@ class EmailerService:
             )
         logger.info(f"No URLs in email {email.msg_num}, notified sender")
 
-    async def _send_result_email(self, email: EmailMessage, result: JobResult) -> None:
+    async def _send_result_email(
+        self, email: EmailMessage, result: JobResult, tag_config: dict | None = None
+    ) -> None:
         """Send result or error email based on job result."""
         if result.success:
             subject, body = format_success_email(
@@ -191,7 +200,11 @@ class EmailerService:
                 summary=result.summary or "",
                 transcript=result.transcript or "",
             )
-            to_addr = self.settings.result_email_address
+            # Use tag's destination_email if set, otherwise default
+            if tag_config and tag_config.get("destination_email"):
+                to_addr = tag_config["destination_email"]
+            else:
+                to_addr = self.settings.result_email_address
         else:
             subject, body = format_error_email(
                 url=result.url,

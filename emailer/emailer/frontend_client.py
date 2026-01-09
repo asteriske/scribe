@@ -71,6 +71,26 @@ class FrontendClient:
             data = response.json()
             return set(data.get("tags", []))
 
+    async def get_tag_config(self, tag_name: str) -> dict | None:
+        """
+        Fetch configuration for a specific tag.
+
+        Args:
+            tag_name: Name of the tag to fetch config for
+
+        Returns:
+            Tag configuration dict or None if tag not found
+        """
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            try:
+                response = await client.get(f"{self.base_url}/api/tags/{tag_name}")
+                response.raise_for_status()
+                return response.json()
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404:
+                    return None
+                raise
+
     async def get_transcription(self, transcription_id: str) -> TranscriptionResult:
         """
         Get transcription status and result.

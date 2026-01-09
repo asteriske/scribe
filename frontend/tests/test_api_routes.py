@@ -286,3 +286,65 @@ def test_transcribe_url_normalizes_tags(client, db_session, monkeypatch):
     assert response.status_code == 202
     data = response.json()
     assert data["tags"] == ["kindle", "format"]
+
+
+def test_get_tag_config_returns_config(client, monkeypatch):
+    """Test GET /api/tags/{name} returns tag configuration."""
+    from frontend.services.config_manager import ConfigManager
+
+    mock_config = {
+        "api_endpoint": "http://test.com/v1",
+        "model": "test-model",
+        "api_key_ref": "test",
+        "system_prompt": "Test prompt",
+        "destination_email": "test@example.com"
+    }
+
+    monkeypatch.setattr(
+        ConfigManager, 'get_tag_config',
+        lambda self, name: mock_config
+    )
+
+    response = client.get("/api/tags/testag")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "testag"
+    assert data["api_endpoint"] == "http://test.com/v1"
+    assert data["model"] == "test-model"
+    assert data["destination_email"] == "test@example.com"
+
+
+def test_get_tag_config_returns_null_destination_email(client, monkeypatch):
+    """Test GET /api/tags/{name} returns null for missing destination_email."""
+    from frontend.services.config_manager import ConfigManager
+
+    mock_config = {
+        "api_endpoint": "http://test.com/v1",
+        "model": "test-model",
+        "api_key_ref": None,
+        "system_prompt": "Test prompt"
+        # No destination_email
+    }
+
+    monkeypatch.setattr(
+        ConfigManager, 'get_tag_config',
+        lambda self, name: mock_config
+    )
+
+    response = client.get("/api/tags/notag")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["destination_email"] is None
+
+
+def test_get_tag_config_not_found(client, monkeypatch):
+    """Test GET /api/tags/{name} returns 404 for unknown tag."""
+    from frontend.services.config_manager import ConfigManager
+
+    monkeypatch.setattr(
+        ConfigManager, 'get_tag_config',
+        lambda self, name: None
+    )
+
+    response = client.get("/api/tags/nonexistent")
+    assert response.status_code == 404
