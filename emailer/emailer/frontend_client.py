@@ -57,7 +57,7 @@ class FrontendClient:
 
     async def get_tags(self) -> set[str]:
         """
-        Fetch available tags from frontend.
+        Fetch available tags from frontend config.
 
         Returns:
             Set of tag names
@@ -66,10 +66,10 @@ class FrontendClient:
             httpx.HTTPStatusError: If the request fails
         """
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.get(f"{self.base_url}/api/tags")
+            response = await client.get(f"{self.base_url}/api/config/tags")
             response.raise_for_status()
             data = response.json()
-            return set(data.get("tags", []))
+            return set(data.get("tags", {}).keys())
 
     async def get_tag_config(self, tag_name: str) -> dict | None:
         """
