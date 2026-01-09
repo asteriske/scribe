@@ -57,12 +57,13 @@ class JobProcessor:
             duration_seconds=result.duration_seconds,
         )
 
-    async def process_url(self, url: str) -> JobResult:
+    async def process_url(self, url: str, tag: str | None = None) -> JobResult:
         """
         Process a single URL through transcription and summarization.
 
         Args:
             url: URL to process
+            tag: Optional tag to apply to the transcription
 
         Returns:
             JobResult with success status and data or error
@@ -70,7 +71,7 @@ class JobProcessor:
         try:
             # Submit for transcription
             logger.info(f"Submitting URL: {url}")
-            transcription_id = await self.frontend.submit_url(url)
+            transcription_id = await self.frontend.submit_url(url, tag=tag)
 
             # Wait for completion
             logger.info(f"Waiting for transcription: {transcription_id}")
