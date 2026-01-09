@@ -30,6 +30,7 @@ class TestEmailerService:
         settings.result_email_address = "results@test.com"
         settings.from_email_address = "scribe@test.com"
         settings.frontend_url = "http://localhost:8000"
+        settings.default_tag = "email"
         return settings
 
     @pytest.mark.asyncio
@@ -45,6 +46,8 @@ class TestEmailerService:
         service.smtp = AsyncMock()
         service.smtp.send_email = AsyncMock()
         service.processor = AsyncMock()
+        service.processor.frontend = AsyncMock()
+        service.processor.frontend.get_tags = AsyncMock(return_value=set())
         service.processor.process_url = AsyncMock(
             return_value=JobResult(
                 url="https://youtube.com/watch?v=abc123",
@@ -66,9 +69,9 @@ class TestEmailerService:
 
         await service._process_email(email)
 
-        # Should have processed the URL
+        # Should have processed the URL with default tag (no match in subject)
         service.processor.process_url.assert_called_once_with(
-            "https://youtube.com/watch?v=abc123"
+            "https://youtube.com/watch?v=abc123", tag="email"
         )
 
         # Should have sent success email
@@ -122,6 +125,8 @@ class TestEmailerService:
         service.smtp = AsyncMock()
         service.smtp.send_email = AsyncMock()
         service.processor = AsyncMock()
+        service.processor.frontend = AsyncMock()
+        service.processor.frontend.get_tags = AsyncMock(return_value=set())
 
         # First URL succeeds, second fails
         service.processor.process_url = AsyncMock(
@@ -158,3 +163,53 @@ class TestEmailerService:
 
         # Should have moved to done folder (partial success)
         service.imap.move_to_folder.assert_called_with("123", "ScribeDone")
+
+    @pytest.mark.asyncio
+    async def test_process_email_resolves_tag_from_subject(self, mock_settings):
+        """Test that tag is resolved from email subject."""
+        from emailer.imap_client import EmailMessage
+        from emailer.job_processor import JobResult
+
+        mock_settings.default_tag = "email"
+
+        service = EmailerService(mock_settings)
+
+        # Mock dependencies
+        service.imap = AsyncMock()
+        service.smtp = AsyncMock()
+        service.smtp.send_email = AsyncMock()
+
+        # Mock processor with frontend that has get_tags
+        service.processor = AsyncMock()
+        service.processor.frontend = AsyncMock()
+        service.processor.frontend.get_tags = AsyncMock(
+            return_value={"podcast", "interview"}
+        )
+        service.processor.process_url = AsyncMock(
+            return_value=JobResult(
+                url="https://example.com/audio.mp3",
+                success=True,
+                title="Test Audio",
+                summary="Summary text",
+                transcript="Transcript text",
+                duration_seconds=100,
+            )
+        )
+
+        email = EmailMessage(
+            msg_num="123",
+            sender="user@example.com",
+            subject="New podcast episode",
+            body_text="https://example.com/audio.mp3",
+            body_html=None,
+        )
+
+        await service._process_email(email)
+
+        # Verify get_tags was called to fetch available tags
+        service.processor.frontend.get_tags.assert_called_once()
+
+        # Verify submit_url was called with resolved tag "podcast"
+        service.processor.process_url.assert_called_once_with(
+            "https://example.com/audio.mp3", tag="podcast"
+        )

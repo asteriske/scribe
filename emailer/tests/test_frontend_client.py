@@ -102,3 +102,46 @@ class TestFrontendClient:
             result = await client.generate_summary("youtube_abc123")
 
             assert result == "This is a summary."
+
+    @pytest.mark.asyncio
+    async def test_get_tags_returns_set(self):
+        """Test that get_tags returns a set of tag names."""
+        with patch("emailer.frontend_client.httpx.AsyncClient") as mock_client:
+            mock_instance = AsyncMock()
+            mock_client.return_value.__aenter__.return_value = mock_instance
+            mock_instance.get = AsyncMock(
+                return_value=MagicMock(
+                    status_code=200,
+                    json=lambda: {"tags": ["podcast", "interview", "meeting"]},
+                )
+            )
+
+            client = FrontendClient(base_url="http://localhost:8000")
+            tags = await client.get_tags()
+
+            assert tags == {"podcast", "interview", "meeting"}
+            mock_instance.get.assert_called_once_with(
+                "http://localhost:8000/api/tags"
+            )
+
+    @pytest.mark.asyncio
+    async def test_submit_url_with_tag(self):
+        """Test submitting URL with a tag."""
+        with patch("emailer.frontend_client.httpx.AsyncClient") as mock_client:
+            mock_instance = AsyncMock()
+            mock_client.return_value.__aenter__.return_value = mock_instance
+            mock_instance.post = AsyncMock(
+                return_value=MagicMock(
+                    status_code=202,
+                    json=lambda: {"id": "test-123", "status": "pending"},
+                )
+            )
+
+            client = FrontendClient(base_url="http://localhost:8000")
+            result = await client.submit_url("https://example.com/audio.mp3", tag="podcast")
+
+            assert result == "test-123"
+            mock_instance.post.assert_called_once_with(
+                "http://localhost:8000/api/transcribe",
+                json={"url": "https://example.com/audio.mp3", "tags": ["podcast"]},
+            )

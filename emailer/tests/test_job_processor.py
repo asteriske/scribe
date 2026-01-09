@@ -73,3 +73,24 @@ class TestJobProcessor:
 
         assert result.success is False
         assert "Invalid URL" in result.error or "Bad Request" in result.error
+
+
+@pytest.mark.asyncio
+async def test_process_url_with_tag():
+    """Test that tag is passed to submit_url."""
+    mock_client = AsyncMock()
+    mock_client.submit_url = AsyncMock(return_value="test-123")
+    mock_client.wait_for_completion = AsyncMock(return_value=MagicMock(
+        status="completed",
+        title="Test",
+        duration_seconds=100,
+        error=None,
+    ))
+    mock_client.get_transcript_text = AsyncMock(return_value="Transcript text")
+    mock_client.generate_summary = AsyncMock(return_value="Summary text")
+
+    processor = JobProcessor(frontend_client=mock_client)
+    result = await processor.process_url("https://example.com/audio.mp3", tag="podcast")
+
+    mock_client.submit_url.assert_called_once_with("https://example.com/audio.mp3", tag="podcast")
+    assert result.success is True

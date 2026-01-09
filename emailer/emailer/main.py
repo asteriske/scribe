@@ -16,6 +16,7 @@ from emailer.result_formatter import (
 )
 from emailer.smtp_client import SmtpClient
 from emailer.url_extractor import extract_urls
+from emailer.tag_resolver import resolve_tag
 
 logging.basicConfig(
     level=logging.INFO,
@@ -126,10 +127,24 @@ class EmailerService:
             await self._handle_no_urls(email)
             return
 
+        # Resolve tag from subject
+        try:
+            available_tags = await self.processor.frontend.get_tags()
+        except Exception as e:
+            logger.warning(f"Failed to fetch tags, using default: {e}")
+            available_tags = set()
+
+        tag = resolve_tag(
+            subject=email.subject,
+            available_tags=available_tags,
+            default=self.settings.default_tag,
+        )
+        logger.info(f"Resolved tag '{tag}' from subject: {email.subject}")
+
         # Process each URL
         results = []
         for url in urls:
-            result = await self.processor.process_url(url)
+            result = await self.processor.process_url(url, tag=tag)
             results.append(result)
             await self._send_result_email(email, result)
 
