@@ -16,7 +16,8 @@
       "api_endpoint": "http://localhost:11434/v1",
       "model": "llama2",
       "api_key_ref": null,
-      "system_prompt": "Provide a brief high-level overview of the following transcription in 2-3 sentences."
+      "system_prompt": "Provide a brief high-level overview of the following transcription in 2-3 sentences.",
+      "destination_email": null
     }
   }
 }
