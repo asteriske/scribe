@@ -108,6 +108,16 @@ class DefaultConfigResponse(BaseModel):
     system_prompt: str
 
 
+class TagConfigDetailResponse(BaseModel):
+    """Response for single tag config lookup."""
+    name: str
+    api_endpoint: str
+    model: str
+    api_key_ref: Optional[str] = None
+    system_prompt: str
+    destination_email: Optional[str] = None
+
+
 class AllTagConfigsResponse(BaseModel):
     """Response for all tag configurations."""
     default: DefaultConfigResponse

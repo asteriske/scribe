@@ -22,6 +22,7 @@ from frontend.api.models import (
     SummaryListResponse,
     TagConfigRequest,
     TagConfigResponse,
+    TagConfigDetailResponse,
     DefaultConfigResponse,
     AllTagConfigsResponse,
     SecretRequest,
@@ -567,6 +568,31 @@ async def delete_tag_config(tag_name: str):
         raise HTTPException(status_code=404, detail=f"Tag config '{tag_name}' not found")
 
     return {"message": f"Tag config '{tag_name}' deleted successfully"}
+
+
+@router.get(
+    "/tags/{tag_name}",
+    response_model=TagConfigDetailResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Tag config not found"}
+    }
+)
+async def get_tag_config(tag_name: str):
+    """Get configuration for a specific tag."""
+    config_manager = ConfigManager()
+    config = config_manager.get_tag_config(tag_name)
+
+    if not config:
+        raise HTTPException(status_code=404, detail=f"Tag config '{tag_name}' not found")
+
+    return TagConfigDetailResponse(
+        name=tag_name,
+        api_endpoint=config["api_endpoint"],
+        model=config["model"],
+        api_key_ref=config.get("api_key_ref"),
+        system_prompt=config["system_prompt"],
+        destination_email=config.get("destination_email")
+    )
 
 
 # =============================================================================
