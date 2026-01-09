@@ -6,18 +6,18 @@
     "system_prompt": "Provide a concise summary of the following transcription:"
   },
   "tags": {
-    "supersummarize": {
-      "api_endpoint": "https://api.openai.com/v1",
-      "model": "gpt-4",
-      "api_key_ref": "openai",
-      "system_prompt": "Provide a detailed, nuanced summary with key insights from the following transcription. Include main themes, important details, and notable quotes."
-    },
-    "kindle": {
-      "api_endpoint": "http://10.100.2.50:11434/v1",
+    "recipe": {
+      "api_endpoint": "http://10.100.2.50:1234/v1",
       "model": "openai/gpt-oss-20b",
       "api_key_ref": null,
-      "system_prompt": "Summarize the following podcast subscription. Pay special attention to main topics, questions asked and hot takes or counter-intuitive opinions."
-      "destination_email": "kindle@patrickmccarthy.cc" 
+      "system_prompt": "This video contains the steps for cooking a dish. As best you can capture the ingredients and steps of the recipe, including tools and techniques used. Create a succinct but complete recipe document. Begin the document with a bullet pointed list of all the ingredients mentioned and their amounts, as in a recipe."
+    },
+    "kindle": {
+      "api_endpoint": "http://10.100.2.50:1234/v1",
+      "model": "openai/gpt-oss-20b",
+      "api_key_ref": null,
+      "system_prompt": "Summarize the following podcast subscription. Pay special attention to main topics, questions asked and hot takes or counter-intuitive opinions.",
+      "destination_email": "kindle@patrickmccarthy.cc"
     }
   }
 }
