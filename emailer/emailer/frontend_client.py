@@ -51,6 +51,22 @@ class FrontendClient:
             logger.info(f"Submitted URL for transcription: {url} -> {data['id']}")
             return data["id"]
 
+    async def get_tags(self) -> set[str]:
+        """
+        Fetch available tags from frontend.
+
+        Returns:
+            Set of tag names
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails
+        """
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.get(f"{self.base_url}/api/tags")
+            response.raise_for_status()
+            data = response.json()
+            return set(data.get("tags", []))
+
     async def get_transcription(self, transcription_id: str) -> TranscriptionResult:
         """
         Get transcription status and result.
