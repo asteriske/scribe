@@ -28,12 +28,13 @@ class FrontendClient:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
-    async def submit_url(self, url: str) -> str:
+    async def submit_url(self, url: str, tag: str | None = None) -> str:
         """
         Submit a URL for transcription.
 
         Args:
             url: URL to transcribe
+            tag: Optional tag to apply to the transcription
 
         Returns:
             Transcription ID
@@ -42,9 +43,12 @@ class FrontendClient:
             httpx.HTTPStatusError: If the request fails
         """
         async with httpx.AsyncClient(timeout=self.timeout) as client:
+            payload = {"url": url}
+            if tag:
+                payload["tags"] = [tag]
             response = await client.post(
                 f"{self.base_url}/api/transcribe",
-                json={"url": url},
+                json=payload,
             )
             response.raise_for_status()
             data = response.json()
