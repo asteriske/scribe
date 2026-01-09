@@ -30,7 +30,7 @@ class EmailerService:
 
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.running = False
+        self._shutdown_event: Optional[asyncio.Event] = None
         self.semaphore: Optional[asyncio.Semaphore] = None
 
         # Initialize clients
@@ -57,7 +57,10 @@ class EmailerService:
         """Start the emailer service."""
         logger.info("Emailer service starting...")
 
-        self.running = True
+        # Use an Event instead of a boolean flag for shutdown signaling.
+        # asyncio.Event.wait() can be interrupted immediately when set(),
+        # unlike asyncio.sleep() which blocks for the full duration.
+        self._shutdown_event = asyncio.Event()
         self.semaphore = asyncio.Semaphore(self.settings.max_concurrent_jobs)
 
         # Connect to IMAP
@@ -69,9 +72,18 @@ class EmailerService:
         )
 
         try:
-            while self.running:
+            while not self._shutdown_event.is_set():
                 await self._poll_and_process()
-                await asyncio.sleep(self.settings.poll_interval_seconds)
+                # Wait for shutdown signal or poll interval (whichever comes first).
+                # Using wait_for with timeout instead of sleep() allows immediate
+                # response to ctrl-c/SIGTERM without waiting for poll interval.
+                try:
+                    await asyncio.wait_for(
+                        self._shutdown_event.wait(),
+                        timeout=self.settings.poll_interval_seconds,
+                    )
+                except asyncio.TimeoutError:
+                    pass  # Timeout is expected - continue polling
         finally:
             await self.imap.disconnect()
             logger.info("Emailer service stopped.")
@@ -79,7 +91,9 @@ class EmailerService:
     async def stop(self) -> None:
         """Stop the emailer service."""
         logger.info("Stopping emailer service...")
-        self.running = False
+        # Setting the event wakes up the wait_for() call immediately,
+        # allowing graceful shutdown without waiting for poll interval.
+        self._shutdown_event.set()
 
     async def _poll_and_process(self) -> None:
         """Poll for new emails and process them."""
