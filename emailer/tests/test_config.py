@@ -69,3 +69,21 @@ def test_config_defaults(monkeypatch):
     assert settings.imap_folder_error == "ScribeError"
     assert settings.poll_interval_seconds == 300
     assert settings.max_concurrent_jobs == 3
+    assert settings.default_tag == "email"
+
+
+def test_default_tag_config(monkeypatch):
+    """Test that default_tag can be configured."""
+    monkeypatch.setenv("DEFAULT_TAG", "inbox")
+    monkeypatch.setenv("IMAP_HOST", "imap.test.com")
+    monkeypatch.setenv("IMAP_USER", "test")
+    monkeypatch.setenv("IMAP_PASSWORD", "test")
+    monkeypatch.setenv("SMTP_HOST", "smtp.test.com")
+    monkeypatch.setenv("SMTP_USER", "test")
+    monkeypatch.setenv("SMTP_PASSWORD", "test")
+    monkeypatch.setenv("RESULT_EMAIL_ADDRESS", "results@test.com")
+    monkeypatch.setenv("FROM_EMAIL_ADDRESS", "scribe@test.com")
+
+    from emailer.config import Settings
+    settings = Settings()
+    assert settings.default_tag == "inbox"

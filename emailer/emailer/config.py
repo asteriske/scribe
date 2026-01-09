@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     # Frontend Service
     frontend_url: str = "http://localhost:8000"
 
+    # Tagging
+    default_tag: str = "email"
+
 
 def get_settings() -> Settings:
     """Get settings instance."""
