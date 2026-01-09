@@ -128,8 +128,8 @@ class ImapClient:
 
         msg = email.message_from_bytes(raw_email)
 
-        # Decode sender
-        sender = msg.get("From", "")
+        # Get sender from Return-Path (more reliable) or fall back to From
+        sender = msg.get("Return-Path", "") or msg.get("From", "")
 
         # Decode subject
         subject = ""

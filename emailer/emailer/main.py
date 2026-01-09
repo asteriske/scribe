@@ -133,12 +133,18 @@ class EmailerService:
             results.append(result)
             await self._send_result_email(email, result)
 
-        # Determine final folder
+        # Determine final folder and move
         any_success = any(r.success for r in results)
-        if any_success:
-            await self.imap.move_to_folder(email.msg_num, self.settings.imap_folder_done)
-        else:
-            await self.imap.move_to_folder(email.msg_num, self.settings.imap_folder_error)
+        target_folder = (
+            self.settings.imap_folder_done if any_success
+            else self.settings.imap_folder_error
+        )
+        try:
+            await self.imap.move_to_folder(email.msg_num, target_folder)
+        except Exception as e:
+            logger.error(
+                f"Failed to move email {email.msg_num} to {target_folder}: {e}"
+            )
 
     async def _handle_no_urls(self, email: EmailMessage) -> None:
         """Handle email with no transcribable URLs."""
@@ -151,7 +157,13 @@ class EmailerService:
             body=body,
         )
 
-        await self.imap.move_to_folder(email.msg_num, self.settings.imap_folder_error)
+        try:
+            await self.imap.move_to_folder(email.msg_num, self.settings.imap_folder_error)
+        except Exception as e:
+            logger.error(
+                f"Failed to move email {email.msg_num} to "
+                f"{self.settings.imap_folder_error}: {e}"
+            )
         logger.info(f"No URLs in email {email.msg_num}, notified sender")
 
     async def _send_result_email(self, email: EmailMessage, result: JobResult) -> None:

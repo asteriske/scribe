@@ -47,10 +47,19 @@ class SmtpClient:
         msg["To"] = to_addr
         msg.set_content(body)
 
-        smtp = SMTP(hostname=self.host, port=self.port, use_tls=self.use_tls)
+        # Port 587 uses STARTTLS (start_tls=True), port 465 uses implicit TLS (use_tls=True)
+        use_implicit_tls = self.port == 465
+        smtp = SMTP(
+            hostname=self.host,
+            port=self.port,
+            use_tls=use_implicit_tls,
+            start_tls=self.use_tls and not use_implicit_tls,
+        )
 
         try:
+            logger.debug(f"Connecting to SMTP server {self.host}:{self.port}")
             await smtp.connect()
+            logger.debug("SMTP connected, logging in...")
             await smtp.login(self.user, self.password)
             await smtp.send_message(msg)
 
