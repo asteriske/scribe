@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 # Patterns for transcribable URLs
 TRANSCRIBABLE_PATTERNS = [
     r"youtube\.com/watch",
+    r"youtube\.com/live/",
     r"youtu\.be/",
     r"podcasts\.apple\.com/",
 ]
