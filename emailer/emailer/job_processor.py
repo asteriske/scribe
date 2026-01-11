@@ -128,6 +128,12 @@ class JobProcessor:
             logger.error(f"Timeout processing {url}: {e}")
             return JobResult(url=url, success=False, error=str(e))
 
+        except httpx.TimeoutException as e:
+            error_msg = f"Request timed out: {type(e).__name__}"
+            logger.error(f"HTTP timeout processing {url}: {error_msg}")
+            return JobResult(url=url, success=False, error=error_msg)
+
         except Exception as e:
-            logger.error(f"Error processing {url}: {e}")
-            return JobResult(url=url, success=False, error=str(e))
+            error_msg = str(e) or f"Unexpected error: {type(e).__name__}"
+            logger.error(f"Error processing {url}: {error_msg}")
+            return JobResult(url=url, success=False, error=error_msg)

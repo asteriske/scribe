@@ -160,7 +160,7 @@ class FrontendClient:
         Raises:
             httpx.HTTPStatusError: If the request fails
         """
-        async with httpx.AsyncClient(timeout=120.0) as client:  # Longer timeout for LLM
+        async with httpx.AsyncClient(timeout=360.0) as client:  # Longer timeout for LLM (must exceed summarizer's 300s)
             response = await client.post(
                 f"{self.base_url}/api/summaries",
                 json={"transcription_id": transcription_id},

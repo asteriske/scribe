@@ -16,8 +16,8 @@ from frontend.services.storage import StorageManager
 
 logger = logging.getLogger(__name__)
 
-# API timeout in seconds
-API_TIMEOUT = 60
+# API timeout in seconds (long transcripts can take several minutes to summarize)
+API_TIMEOUT = 300
 
 
 class SummaryResult(NamedTuple):
