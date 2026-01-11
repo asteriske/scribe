@@ -32,10 +32,12 @@ def extract_youtube_id(url: str) -> Optional[str]:
     - https://www.youtube.com/watch?v=VIDEO_ID
     - https://youtu.be/VIDEO_ID
     - https://m.youtube.com/watch?v=VIDEO_ID
+    - https://youtube.com/live/VIDEO_ID
     """
     patterns = [
         r'(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})',
         r'youtube\.com\/embed\/([a-zA-Z0-9_-]{11})',
+        r'youtube\.com\/live\/([a-zA-Z0-9_-]{11})',
     ]
 
     for pattern in patterns:

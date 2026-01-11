@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     imap_folder_error: str = "ScribeError"
 
     # Processing
-    poll_interval_seconds: int = 300
+    poll_interval_seconds: int = 30
     max_concurrent_jobs: int = 3
 
     # Destinations
