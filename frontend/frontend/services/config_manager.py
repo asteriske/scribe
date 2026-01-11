@@ -198,7 +198,8 @@ class ConfigManager:
         api_endpoint: str,
         model: str,
         system_prompt: str,
-        api_key_ref: Optional[str] = None
+        api_key_ref: Optional[str] = None,
+        destination_emails: Optional[List[str]] = None
     ) -> bool:
         """
         Create a new tag configuration.
@@ -209,6 +210,7 @@ class ConfigManager:
             model: Model name
             system_prompt: System prompt for summarization
             api_key_ref: Optional reference to API key
+            destination_emails: Optional list of email addresses to send results to
 
         Returns:
             True if created successfully, False otherwise
@@ -221,7 +223,8 @@ class ConfigManager:
             "api_endpoint": api_endpoint,
             "model": model,
             "api_key_ref": api_key_ref,
-            "system_prompt": system_prompt
+            "system_prompt": system_prompt,
+            "destination_emails": destination_emails or []
         }
 
         return self._write_tag_configs(configs)
@@ -232,7 +235,8 @@ class ConfigManager:
         api_endpoint: str,
         model: str,
         system_prompt: str,
-        api_key_ref: Optional[str] = None
+        api_key_ref: Optional[str] = None,
+        destination_emails: Optional[List[str]] = None
     ) -> bool:
         """Update an existing tag configuration."""
         configs = self._read_tag_configs()
@@ -244,7 +248,8 @@ class ConfigManager:
             "api_endpoint": api_endpoint,
             "model": model,
             "api_key_ref": api_key_ref,
-            "system_prompt": system_prompt
+            "system_prompt": system_prompt,
+            "destination_emails": destination_emails or []
         }
 
         return self._write_tag_configs(configs)

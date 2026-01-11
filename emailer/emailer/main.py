@@ -214,24 +214,31 @@ class EmailerService:
                 summary=result.summary or "",
                 transcript=result.transcript or "",
             )
-            # Use tag's destination_email if set, otherwise default
-            if tag_config and tag_config.get("destination_email"):
-                to_addr = tag_config["destination_email"]
+            # Use tag's destination_emails if set, otherwise reply to sender
+            destination_emails = tag_config.get("destination_emails", []) if tag_config else []
+            if destination_emails:
+                recipients = destination_emails
             else:
-                to_addr = self.settings.result_email_address
+                recipients = [email.sender]
+
+            for to_addr in recipients:
+                await self.smtp.send_email(
+                    from_addr=self.settings.from_email_address,
+                    to_addr=to_addr,
+                    subject=subject,
+                    body=body,
+                )
         else:
             subject, body = format_error_email(
                 url=result.url,
                 error_message=result.error or "Unknown error",
             )
-            to_addr = email.sender
-
-        await self.smtp.send_email(
-            from_addr=self.settings.from_email_address,
-            to_addr=to_addr,
-            subject=subject,
-            body=body,
-        )
+            await self.smtp.send_email(
+                from_addr=self.settings.from_email_address,
+                to_addr=email.sender,
+                subject=subject,
+                body=body,
+            )
 
 
 async def main() -> None:

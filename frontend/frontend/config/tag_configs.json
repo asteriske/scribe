@@ -17,7 +17,7 @@
       "model": "openai/gpt-oss-20b",
       "api_key_ref": null,
       "system_prompt": "Summarize the following podcast subscription. Pay special attention to main topics, questions asked and hot takes or counter-intuitive opinions.",
-      "destination_email": "kindle@patrickmccarthy.cc"
+      "destination_emails": ["kindle@patrickmccarthy.cc"]
     }
   }
 }

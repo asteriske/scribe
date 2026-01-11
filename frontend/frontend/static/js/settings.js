@@ -26,6 +26,7 @@ const tagApiEndpointInput = document.getElementById('tagApiEndpoint');
 const tagModelInput = document.getElementById('tagModel');
 const tagApiKeyRefSelect = document.getElementById('tagApiKeyRef');
 const tagSystemPromptInput = document.getElementById('tagSystemPrompt');
+const tagDestinationEmailsInput = document.getElementById('tagDestinationEmails');
 
 // Default Config Modal
 const defaultConfigModal = document.getElementById('defaultConfigModal');
@@ -123,6 +124,9 @@ function renderTagConfigs() {
 
     tagConfigList.innerHTML = tagNames.map(tagName => {
         const config = tagConfigs[tagName];
+        const destEmails = config.destination_emails && config.destination_emails.length > 0
+            ? escapeHtml(config.destination_emails.join(', '))
+            : 'Reply to sender';
         return `
             <div class="config-card">
                 <div class="config-header">
@@ -144,6 +148,10 @@ function renderTagConfigs() {
                     <div class="config-detail">
                         <span class="config-detail-label">API Key</span>
                         <span class="config-detail-value">${config.api_key_ref ? escapeHtml(config.api_key_ref) : 'None'}</span>
+                    </div>
+                    <div class="config-detail">
+                        <span class="config-detail-label">Destination</span>
+                        <span class="config-detail-value truncate">${destEmails}</span>
                     </div>
                 </div>
             </div>
@@ -214,6 +222,7 @@ function openTagConfigModal(mode, tagName = null) {
         tagModelInput.value = '';
         tagApiKeyRefSelect.value = '';
         tagSystemPromptInput.value = '';
+        tagDestinationEmailsInput.value = '';
         tagNameInput.disabled = false;
     } else {
         tagConfigModalTitle.textContent = 'Edit Tag Configuration';
@@ -223,6 +232,7 @@ function openTagConfigModal(mode, tagName = null) {
         tagModelInput.value = config.model;
         tagApiKeyRefSelect.value = config.api_key_ref || '';
         tagSystemPromptInput.value = config.system_prompt;
+        tagDestinationEmailsInput.value = (config.destination_emails || []).join(', ');
         tagNameInput.disabled = true;
     }
 
@@ -238,12 +248,17 @@ async function handleTagConfigSubmit(e) {
 
     const mode = tagConfigMode.value;
     const tagName = tagNameInput.value.trim();
+    const destinationEmailsRaw = tagDestinationEmailsInput.value.trim();
+    const destinationEmails = destinationEmailsRaw
+        ? destinationEmailsRaw.split(',').map(e => e.trim()).filter(e => e)
+        : [];
     const requestBody = {
         tag_name: tagName,
         api_endpoint: tagApiEndpointInput.value.trim(),
         model: tagModelInput.value.trim(),
         api_key_ref: tagApiKeyRefSelect.value || null,
-        system_prompt: tagSystemPromptInput.value.trim()
+        system_prompt: tagSystemPromptInput.value.trim(),
+        destination_emails: destinationEmails
     };
 
     try {

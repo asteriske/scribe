@@ -297,7 +297,7 @@ def test_get_tag_config_returns_config(client, monkeypatch):
         "model": "test-model",
         "api_key_ref": "test",
         "system_prompt": "Test prompt",
-        "destination_email": "test@example.com"
+        "destination_emails": ["test@example.com"]
     }
 
     monkeypatch.setattr(
@@ -311,11 +311,11 @@ def test_get_tag_config_returns_config(client, monkeypatch):
     assert data["name"] == "testag"
     assert data["api_endpoint"] == "http://test.com/v1"
     assert data["model"] == "test-model"
-    assert data["destination_email"] == "test@example.com"
+    assert data["destination_emails"] == ["test@example.com"]
 
 
-def test_get_tag_config_returns_null_destination_email(client, monkeypatch):
-    """Test GET /api/tags/{name} returns null for missing destination_email."""
+def test_get_tag_config_returns_empty_destination_emails(client, monkeypatch):
+    """Test GET /api/tags/{name} returns empty list for missing destination_emails."""
     from frontend.services.config_manager import ConfigManager
 
     mock_config = {
@@ -323,7 +323,7 @@ def test_get_tag_config_returns_null_destination_email(client, monkeypatch):
         "model": "test-model",
         "api_key_ref": None,
         "system_prompt": "Test prompt"
-        # No destination_email
+        # No destination_emails
     }
 
     monkeypatch.setattr(
@@ -334,7 +334,7 @@ def test_get_tag_config_returns_null_destination_email(client, monkeypatch):
     response = client.get("/api/tags/notag")
     assert response.status_code == 200
     data = response.json()
-    assert data["destination_email"] is None
+    assert data["destination_emails"] == []
 
 
 def test_get_tag_config_not_found(client, monkeypatch):

@@ -508,7 +508,8 @@ async def create_tag_config(request: TagConfigRequest):
         api_endpoint=request.api_endpoint,
         model=request.model,
         system_prompt=request.system_prompt,
-        api_key_ref=request.api_key_ref
+        api_key_ref=request.api_key_ref,
+        destination_emails=request.destination_emails
     )
 
     if not success:
@@ -519,7 +520,8 @@ async def create_tag_config(request: TagConfigRequest):
         api_endpoint=request.api_endpoint,
         model=request.model,
         api_key_ref=request.api_key_ref,
-        system_prompt=request.system_prompt
+        system_prompt=request.system_prompt,
+        destination_emails=request.destination_emails or []
     )
 
 
@@ -543,7 +545,8 @@ async def update_tag_config(tag_name: str, request: TagConfigRequest):
         api_endpoint=request.api_endpoint,
         model=request.model,
         system_prompt=request.system_prompt,
-        api_key_ref=request.api_key_ref
+        api_key_ref=request.api_key_ref,
+        destination_emails=request.destination_emails
     )
 
     if not success:
@@ -554,7 +557,8 @@ async def update_tag_config(tag_name: str, request: TagConfigRequest):
         api_endpoint=request.api_endpoint,
         model=request.model,
         api_key_ref=request.api_key_ref,
-        system_prompt=request.system_prompt
+        system_prompt=request.system_prompt,
+        destination_emails=request.destination_emails or []
     )
 
 
@@ -591,7 +595,7 @@ async def get_tag_config(tag_name: str):
         model=config["model"],
         api_key_ref=config.get("api_key_ref"),
         system_prompt=config["system_prompt"],
-        destination_email=config.get("destination_email")
+        destination_emails=config.get("destination_emails", [])
     )
 
 

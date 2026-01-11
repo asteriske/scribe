@@ -89,6 +89,7 @@ class TagConfigRequest(BaseModel):
     model: str = Field(..., description="Model name")
     api_key_ref: Optional[str] = Field(None, description="Reference to stored API key")
     system_prompt: str = Field(..., description="System prompt for summarization")
+    destination_emails: Optional[List[str]] = Field(None, description="Email addresses to send results to")
 
 
 class TagConfigResponse(BaseModel):
@@ -98,6 +99,7 @@ class TagConfigResponse(BaseModel):
     model: str
     api_key_ref: Optional[str] = None
     system_prompt: str
+    destination_emails: Optional[List[str]] = None
 
 
 class DefaultConfigResponse(BaseModel):
@@ -115,7 +117,7 @@ class TagConfigDetailResponse(BaseModel):
     model: str
     api_key_ref: Optional[str] = None
     system_prompt: str
-    destination_email: Optional[str] = None
+    destination_emails: Optional[List[str]] = None
 
 
 class AllTagConfigsResponse(BaseModel):

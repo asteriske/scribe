@@ -75,10 +75,10 @@ class TestEmailerService:
             "https://youtube.com/watch?v=abc123", tag="email"
         )
 
-        # Should have sent success email (to default since no tag destination)
+        # Should have sent success email (to sender since no tag destination)
         service.smtp.send_email.assert_called()
         call_args = service.smtp.send_email.call_args
-        assert call_args.kwargs["to_addr"] == "results@test.com"
+        assert call_args.kwargs["to_addr"] == "user@example.com"
         assert "[Scribe]" in call_args.kwargs["subject"]
 
         # Should have moved to done folder
@@ -257,7 +257,7 @@ class TestSendResultEmail:
         # Tag config with destination_email
         tag_config = {
             "name": "kindle",
-            "destination_email": "kindle@example.com"
+            "destination_emails": ["kindle@example.com"]
         }
 
         mock_email = MagicMock(sender="user@test.com", subject="Test")
@@ -278,17 +278,17 @@ class TestSendResultEmail:
         assert call_kwargs.kwargs["to_addr"] == "kindle@example.com"
 
     @pytest.mark.asyncio
-    async def test_uses_default_when_tag_destination_not_set(self, mock_settings):
-        """Test fallback to default when tag has no destination_email."""
+    async def test_uses_sender_when_tag_destination_not_set(self, mock_settings):
+        """Test fallback to sender when tag has no destination_emails."""
         from emailer.job_processor import JobResult
 
         service = EmailerService(mock_settings)
         service.smtp = AsyncMock()
 
-        # Tag config without destination_email
+        # Tag config without destination_emails
         tag_config = {
             "name": "podcast",
-            "destination_email": None
+            "destination_emails": []
         }
 
         mock_email = MagicMock(sender="user@test.com", subject="Test")
@@ -303,14 +303,14 @@ class TestSendResultEmail:
 
         await service._send_result_email(mock_email, result, tag_config=tag_config)
 
-        # Verify email was sent to default destination
+        # Verify email was sent to sender (fallback)
         service.smtp.send_email.assert_called_once()
         call_kwargs = service.smtp.send_email.call_args
-        assert call_kwargs.kwargs["to_addr"] == "default@example.com"
+        assert call_kwargs.kwargs["to_addr"] == "user@test.com"
 
     @pytest.mark.asyncio
-    async def test_uses_default_when_no_tag_config(self, mock_settings):
-        """Test fallback to default when no tag config available."""
+    async def test_uses_sender_when_no_tag_config(self, mock_settings):
+        """Test fallback to sender when no tag config available."""
         from emailer.job_processor import JobResult
 
         service = EmailerService(mock_settings)
@@ -329,7 +329,39 @@ class TestSendResultEmail:
         # No tag config passed (defaults to None)
         await service._send_result_email(mock_email, result)
 
-        # Verify email was sent to default destination
+        # Verify email was sent to sender (fallback)
         service.smtp.send_email.assert_called_once()
         call_kwargs = service.smtp.send_email.call_args
-        assert call_kwargs.kwargs["to_addr"] == "default@example.com"
+        assert call_kwargs.kwargs["to_addr"] == "user@test.com"
+
+    @pytest.mark.asyncio
+    async def test_sends_to_multiple_destination_emails(self, mock_settings):
+        """Test sending to multiple destination emails."""
+        from emailer.job_processor import JobResult
+
+        service = EmailerService(mock_settings)
+        service.smtp = AsyncMock()
+
+        # Tag config with multiple destination emails
+        tag_config = {
+            "name": "broadcast",
+            "destination_emails": ["alice@example.com", "bob@example.com", "carol@example.com"]
+        }
+
+        mock_email = MagicMock(sender="user@test.com", subject="Test")
+        result = JobResult(
+            url="https://youtube.com/test",
+            success=True,
+            title="Test Video",
+            summary="Test summary",
+            transcript="Test transcript",
+            duration_seconds=120,
+        )
+
+        await service._send_result_email(mock_email, result, tag_config=tag_config)
+
+        # Verify email was sent to all destinations
+        assert service.smtp.send_email.call_count == 3
+        call_args_list = service.smtp.send_email.call_args_list
+        recipients = [call.kwargs["to_addr"] for call in call_args_list]
+        assert recipients == ["alice@example.com", "bob@example.com", "carol@example.com"]
