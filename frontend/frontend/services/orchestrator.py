@@ -111,9 +111,11 @@ class Orchestrator:
                     )
                 session.commit()
 
-            # Download audio
+            # Download audio (run in thread pool to avoid blocking event loop)
             await self._update_status(transcription_id, "downloading", 10)
-            download_result = self.downloader.download(url, transcription_id)
+            download_result = await asyncio.to_thread(
+                self.downloader.download, url, transcription_id
+            )
 
             if not download_result.success:
                 await self._mark_failed(transcription_id, f"Download failed: {download_result.error}")
@@ -126,9 +128,11 @@ class Orchestrator:
             # Update with download metadata
             await self._update_metadata(transcription_id, download_result.metadata)
 
-            # Submit to transcriber
+            # Submit to transcriber (run in thread pool to avoid blocking event loop)
             await self._update_status(transcription_id, "transcribing", 50)
-            transcribe_result = self.transcriber_client.submit_job(download_result.audio_path)
+            transcribe_result = await asyncio.to_thread(
+                self.transcriber_client.submit_job, download_result.audio_path
+            )
 
             if not transcribe_result.success:
                 await self._mark_failed(transcription_id, f"Transcription failed: {transcribe_result.error}")
