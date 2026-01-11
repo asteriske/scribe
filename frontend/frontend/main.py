@@ -2,11 +2,13 @@
 
 import asyncio
 import logging
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from frontend.core.config import settings
 from frontend.core.database import init_db, get_engine
@@ -21,6 +23,29 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+
+class RequestTimingMiddleware(BaseHTTPMiddleware):
+    """Middleware to log request timing for API endpoints."""
+
+    async def dispatch(self, request: Request, call_next):
+        # Only log API requests
+        if request.url.path.startswith("/api/"):
+            start = time.monotonic()
+            logger.debug(f"Request started: {request.method} {request.url.path}")
+
+            response = await call_next(request)
+
+            elapsed = time.monotonic() - start
+            # Log slow requests (>1s) at INFO level, others at DEBUG
+            if elapsed > 1.0:
+                logger.info(f"Request completed: {request.method} {request.url.path} -> {response.status_code} ({elapsed:.2f}s) [SLOW]")
+            else:
+                logger.debug(f"Request completed: {request.method} {request.url.path} -> {response.status_code} ({elapsed:.2f}s)")
+
+            return response
+        else:
+            return await call_next(request)
 
 
 @asynccontextmanager
@@ -83,6 +108,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Request timing middleware for debugging
+app.add_middleware(RequestTimingMiddleware)
 
 # Mount static files
 static_dir = Path(__file__).parent / "static"
