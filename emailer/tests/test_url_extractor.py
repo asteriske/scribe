@@ -13,6 +13,9 @@ class TestIsTranscribableUrl:
     def test_youtube_short_url(self):
         assert is_transcribable_url("https://youtu.be/abc123")
 
+    def test_youtube_live_url(self):
+        assert is_transcribable_url("https://www.youtube.com/live/abc123")
+
     def test_apple_podcasts_url(self):
         assert is_transcribable_url("https://podcasts.apple.com/us/podcast/episode/id123")
 
