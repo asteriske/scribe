@@ -19,6 +19,9 @@ class TestIsTranscribableUrl:
     def test_apple_podcasts_url(self):
         assert is_transcribable_url("https://podcasts.apple.com/us/podcast/episode/id123")
 
+    def test_podcast_addict_url(self):
+        assert is_transcribable_url("https://podcastaddict.com/hard-fork/episode/215066511")
+
     def test_direct_mp3_url(self):
         assert is_transcribable_url("https://example.com/audio.mp3")
 

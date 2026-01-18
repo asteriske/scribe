@@ -12,6 +12,7 @@ TRANSCRIBABLE_PATTERNS = [
     r"youtube\.com/live/",
     r"youtu\.be/",
     r"podcasts\.apple\.com/",
+    r"podcastaddict\.com/.+/episode/",
 ]
 
 # File extensions for direct audio URLs

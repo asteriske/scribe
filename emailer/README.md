@@ -100,6 +100,7 @@ Monitors an IMAP folder for emails containing transcribable URLs, processes them
 
 - YouTube: `youtube.com/watch?v=...`, `youtu.be/...`
 - Apple Podcasts: `podcasts.apple.com/...`
+- Podcast Addict: `podcastaddict.com/.../episode/...`
 - Direct audio: `.mp3`, `.m4a`, `.wav`, `.flac`, `.ogg`, `.aac`
 
 ## Testing
