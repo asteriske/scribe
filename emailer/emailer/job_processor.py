@@ -1,6 +1,7 @@
 """Process transcription jobs from URLs."""
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -68,16 +69,23 @@ class JobProcessor:
         Returns:
             JobResult with success status and data or error
         """
+        job_start = time.monotonic()
+        current_step = "initializing"
+        transcription_id = None
         try:
             # Submit for transcription
-            logger.info(f"Submitting URL: {url}")
+            current_step = "submitting URL"
+            logger.info(f"[{url}] Step 1/4: Submitting URL")
             transcription_id = await self.frontend.submit_url(url, tag=tag)
 
             # Wait for completion
-            logger.info(f"Waiting for transcription: {transcription_id}")
+            current_step = "waiting for transcription"
+            logger.info(f"[{url}] Step 2/4: Waiting for transcription {transcription_id}")
             result = await self.frontend.wait_for_completion(transcription_id)
 
             if result.status == "failed":
+                elapsed = time.monotonic() - job_start
+                logger.error(f"[{url}] Failed after {elapsed:.1f}s: {result.error}")
                 return JobResult(
                     url=url,
                     success=False,
@@ -85,12 +93,16 @@ class JobProcessor:
                 )
 
             # Get transcript and generate summary
-            logger.info(f"Fetching transcript for: {transcription_id}")
+            current_step = "fetching transcript"
+            logger.info(f"[{url}] Step 3/4: Fetching transcript for {transcription_id}")
             transcript = await self.frontend.get_transcript_text(transcription_id)
 
-            logger.info(f"Generating summary for: {transcription_id}")
+            current_step = "generating summary"
+            logger.info(f"[{url}] Step 4/4: Generating summary for {transcription_id}")
             summary = await self.frontend.generate_summary(transcription_id)
 
+            elapsed = time.monotonic() - job_start
+            logger.info(f"[{url}] Completed successfully in {elapsed:.1f}s")
             return JobResult(
                 url=url,
                 success=True,
@@ -101,19 +113,20 @@ class JobProcessor:
             )
 
         except httpx.HTTPStatusError as e:
+            elapsed = time.monotonic() - job_start
             # Handle 409 Conflict - transcription already exists
             if e.response.status_code == 409:
                 try:
                     data = e.response.json()
                     existing_id = data.get("existing_id")
                     if existing_id:
-                        logger.info(f"Transcription already exists: {existing_id}")
+                        logger.info(f"[{url}] Transcription already exists: {existing_id}")
                         return await self._process_existing(url, existing_id)
                 except httpx.HTTPStatusError as inner_e:
                     # Re-raise to be handled below with correct error
                     e = inner_e
                 except Exception as inner_e:
-                    logger.error(f"Error processing existing transcription {url}: {inner_e}")
+                    logger.error(f"[{url}] Error processing existing transcription: {inner_e}")
                     return JobResult(url=url, success=False, error=str(inner_e))
 
             error_msg = f"HTTP error: {e.response.status_code}"
@@ -121,19 +134,22 @@ class JobProcessor:
                 error_msg = e.response.text or error_msg
             except Exception:
                 pass
-            logger.error(f"HTTP error processing {url}: {error_msg}")
+            logger.error(f"[{url}] HTTP error during '{current_step}' after {elapsed:.1f}s: {error_msg}")
             return JobResult(url=url, success=False, error=error_msg)
 
         except TimeoutError as e:
-            logger.error(f"Timeout processing {url}: {e}")
+            elapsed = time.monotonic() - job_start
+            logger.error(f"[{url}] Timeout during '{current_step}' after {elapsed:.1f}s: {e}")
             return JobResult(url=url, success=False, error=str(e))
 
         except httpx.TimeoutException as e:
-            error_msg = f"Request timed out: {type(e).__name__}"
-            logger.error(f"HTTP timeout processing {url}: {error_msg}")
+            elapsed = time.monotonic() - job_start
+            error_msg = f"Request timed out during '{current_step}': {type(e).__name__}"
+            logger.error(f"[{url}] HTTP timeout after {elapsed:.1f}s: {error_msg}")
             return JobResult(url=url, success=False, error=error_msg)
 
         except Exception as e:
+            elapsed = time.monotonic() - job_start
             error_msg = str(e) or f"Unexpected error: {type(e).__name__}"
-            logger.error(f"Error processing {url}: {error_msg}")
+            logger.error(f"[{url}] Error during '{current_step}' after {elapsed:.1f}s: {error_msg}")
             return JobResult(url=url, success=False, error=error_msg)

@@ -11,6 +11,7 @@ class SourceType(str, Enum):
     """Source type enumeration."""
     YOUTUBE = "youtube"
     APPLE_PODCASTS = "apple_podcasts"
+    PODCAST_ADDICT = "podcast_addict"
     DIRECT_AUDIO = "direct_audio"
 
 
@@ -67,6 +68,20 @@ def extract_apple_podcast_id(url: str) -> Optional[str]:
     return None
 
 
+def extract_podcast_addict_id(url: str) -> Optional[str]:
+    """
+    Extract Podcast Addict episode ID from URL.
+
+    Supports:
+    - https://podcastaddict.com/podcast-name/episode/123456
+    """
+    match = re.search(r'podcastaddict\.com/[^/]+/episode/(\d+)', url, re.IGNORECASE)
+    if match:
+        return match.group(1)
+
+    return None
+
+
 def generate_id(url: str) -> str:
     """
     Generate deterministic ID from URL.
@@ -89,6 +104,12 @@ def generate_id(url: str) -> str:
         podcast_id = extract_apple_podcast_id(url)
         if podcast_id:
             return f'apple_podcasts_{podcast_id}'
+
+    # Podcast Addict
+    elif 'podcastaddict.com' in url_lower:
+        podcast_id = extract_podcast_addict_id(url)
+        if podcast_id:
+            return f'podcast_addict_{podcast_id}'
 
     # Direct audio URL - use hash (MD5 is sufficient for ID generation, not security)
     url_hash = hashlib.md5(url.encode()).hexdigest()[:12]
@@ -139,6 +160,19 @@ def parse_url(url: str) -> URLInfo:
             source_type=SourceType.APPLE_PODCASTS,
             original_url=url,
             id=f'apple_podcasts_{podcast_id}',
+            podcast_id=podcast_id
+        )
+
+    # Podcast Addict
+    elif 'podcastaddict.com' in url_lower:
+        podcast_id = extract_podcast_addict_id(url)
+        if not podcast_id:
+            raise ValueError(f"Could not extract Podcast Addict episode ID from: {url}")
+
+        return URLInfo(
+            source_type=SourceType.PODCAST_ADDICT,
+            original_url=url,
+            id=f'podcast_addict_{podcast_id}',
             podcast_id=podcast_id
         )
 

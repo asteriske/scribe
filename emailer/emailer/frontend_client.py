@@ -1,6 +1,7 @@
 """Client for frontend API communication."""
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -42,6 +43,8 @@ class FrontendClient:
         Raises:
             httpx.HTTPStatusError: If the request fails
         """
+        logger.debug(f"POST /api/transcribe starting for {url}")
+        start = time.monotonic()
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             payload = {"url": url}
             if tag:
@@ -50,9 +53,10 @@ class FrontendClient:
                 f"{self.base_url}/api/transcribe",
                 json=payload,
             )
+            elapsed = time.monotonic() - start
             response.raise_for_status()
             data = response.json()
-            logger.info(f"Submitted URL for transcription: {url} -> {data['id']}")
+            logger.info(f"Submitted URL for transcription: {url} -> {data['id']} ({elapsed:.2f}s)")
             return data["id"]
 
     async def get_tags(self) -> set[str]:
@@ -65,10 +69,14 @@ class FrontendClient:
         Raises:
             httpx.HTTPStatusError: If the request fails
         """
+        logger.debug("GET /api/config/tags starting")
+        start = time.monotonic()
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.get(f"{self.base_url}/api/config/tags")
+            elapsed = time.monotonic() - start
             response.raise_for_status()
             data = response.json()
+            logger.debug(f"GET /api/config/tags completed ({elapsed:.2f}s)")
             return set(data.get("tags", {}).keys())
 
     async def get_tag_config(self, tag_name: str) -> dict | None:
@@ -81,10 +89,14 @@ class FrontendClient:
         Returns:
             Tag configuration dict or None if tag not found
         """
+        logger.debug(f"GET /api/tags/{tag_name} starting")
+        start = time.monotonic()
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             try:
                 response = await client.get(f"{self.base_url}/api/tags/{tag_name}")
+                elapsed = time.monotonic() - start
                 response.raise_for_status()
+                logger.debug(f"GET /api/tags/{tag_name} completed ({elapsed:.2f}s)")
                 return response.json()
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 404:
@@ -101,12 +113,16 @@ class FrontendClient:
         Returns:
             TranscriptionResult with current status and data
         """
+        logger.debug(f"GET /api/transcriptions/{transcription_id} starting")
+        start = time.monotonic()
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.get(
                 f"{self.base_url}/api/transcriptions/{transcription_id}"
             )
+            elapsed = time.monotonic() - start
             response.raise_for_status()
             data = response.json()
+            logger.debug(f"GET /api/transcriptions/{transcription_id} completed: status={data['status']} ({elapsed:.2f}s)")
 
             result = TranscriptionResult(
                 transcription_id=data["id"],
@@ -140,11 +156,15 @@ class FrontendClient:
         Returns:
             Full transcript text
         """
+        logger.debug(f"GET /api/transcriptions/{transcription_id}/export/txt starting")
+        start = time.monotonic()
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.get(
                 f"{self.base_url}/api/transcriptions/{transcription_id}/export/txt"
             )
+            elapsed = time.monotonic() - start
             response.raise_for_status()
+            logger.debug(f"GET /api/transcriptions/{transcription_id}/export/txt completed ({elapsed:.2f}s)")
             return response.text
 
     async def generate_summary(self, transcription_id: str) -> str:
@@ -160,14 +180,17 @@ class FrontendClient:
         Raises:
             httpx.HTTPStatusError: If the request fails
         """
+        logger.debug(f"POST /api/summaries starting for {transcription_id}")
+        start = time.monotonic()
         async with httpx.AsyncClient(timeout=360.0) as client:  # Longer timeout for LLM (must exceed summarizer's 300s)
             response = await client.post(
                 f"{self.base_url}/api/summaries",
                 json={"transcription_id": transcription_id},
             )
+            elapsed = time.monotonic() - start
             response.raise_for_status()
             data = response.json()
-            logger.info(f"Generated summary for {transcription_id}")
+            logger.info(f"Generated summary for {transcription_id} ({elapsed:.2f}s)")
             return data["summary_text"]
 
     async def wait_for_completion(
@@ -192,16 +215,21 @@ class FrontendClient:
         """
         import asyncio
 
-        elapsed = 0.0
-        while elapsed < max_wait:
+        logger.info(f"Waiting for transcription {transcription_id} (max_wait={max_wait}s)")
+        start = time.monotonic()
+        poll_count = 0
+        while (time.monotonic() - start) < max_wait:
+            poll_count += 1
             result = await self.get_transcription(transcription_id)
 
             if result.status in ("completed", "failed"):
+                total_elapsed = time.monotonic() - start
+                logger.info(f"Transcription {transcription_id} {result.status} after {total_elapsed:.1f}s ({poll_count} polls)")
                 return result
 
             await asyncio.sleep(poll_interval)
-            elapsed += poll_interval
 
+        total_elapsed = time.monotonic() - start
         raise TimeoutError(
-            f"Transcription {transcription_id} did not complete within {max_wait}s"
+            f"Transcription {transcription_id} did not complete within {total_elapsed:.1f}s ({poll_count} polls)"
         )

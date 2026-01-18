@@ -5,6 +5,7 @@ from frontend.utils.url_parser import (
     generate_id,
     extract_youtube_id,
     extract_apple_podcast_id,
+    extract_podcast_addict_id,
     SourceType
 )
 
@@ -69,3 +70,20 @@ def test_apple_podcasts_case_insensitive():
     info = parse_url(url)
     assert info.source_type == SourceType.APPLE_PODCASTS
     assert info.id == "apple_podcasts_1000641234567"
+
+
+def test_parse_podcast_addict_url():
+    """Test parsing Podcast Addict URL"""
+    url = "https://podcastaddict.com/hard-fork/episode/215066511"
+    info = parse_url(url)
+    assert info.source_type == SourceType.PODCAST_ADDICT
+    assert info.podcast_id == "215066511"
+    assert info.id == "podcast_addict_215066511"
+
+
+def test_podcast_addict_case_insensitive():
+    """Test Podcast Addict URLs are case-insensitive"""
+    url = "https://PodcastAddict.com/Hard-Fork/episode/215066511"
+    info = parse_url(url)
+    assert info.source_type == SourceType.PODCAST_ADDICT
+    assert info.id == "podcast_addict_215066511"
