@@ -7,7 +7,7 @@ from typing import Optional
 
 import httpx
 
-from emailer.frontend_client import FrontendClient
+from emailer.frontend_client import FrontendClient, HTML_SUMMARY_SUFFIX
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,10 @@ class JobProcessor:
         transcript = await self.frontend.get_transcript_text(transcription_id)
 
         logger.info(f"Generating summary for existing: {transcription_id}")
-        summary = await self.frontend.generate_summary(transcription_id)
+        summary = await self.frontend.generate_summary(
+            transcription_id,
+            system_prompt_suffix=HTML_SUMMARY_SUFFIX,
+        )
 
         return JobResult(
             url=url,
@@ -99,7 +102,10 @@ class JobProcessor:
 
             current_step = "generating summary"
             logger.info(f"[{url}] Step 4/4: Generating summary for {transcription_id}")
-            summary = await self.frontend.generate_summary(transcription_id)
+            summary = await self.frontend.generate_summary(
+                transcription_id,
+                system_prompt_suffix=HTML_SUMMARY_SUFFIX,
+            )
 
             elapsed = time.monotonic() - job_start
             logger.info(f"[{url}] Completed successfully in {elapsed:.1f}s")

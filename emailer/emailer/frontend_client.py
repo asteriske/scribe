@@ -9,6 +9,8 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+HTML_SUMMARY_SUFFIX = """Format your response using valid HTML elements (headings, paragraphs, lists, tables, etc.). Do not include <html>, <head>, or <body> tags - only the inner content."""
+
 
 @dataclass
 class TranscriptionResult:

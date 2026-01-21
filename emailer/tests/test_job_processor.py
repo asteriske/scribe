@@ -94,3 +94,30 @@ async def test_process_url_with_tag():
 
     mock_client.submit_url.assert_called_once_with("https://example.com/audio.mp3", tag="podcast")
     assert result.success is True
+
+
+@pytest.mark.asyncio
+async def test_process_url_requests_html_summary():
+    """Test that process_url requests HTML-formatted summary."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from emailer.job_processor import JobProcessor
+    from emailer.frontend_client import FrontendClient, HTML_SUMMARY_SUFFIX
+
+    mock_frontend = AsyncMock(spec=FrontendClient)
+    mock_frontend.submit_url = AsyncMock(return_value="test-id")
+    mock_frontend.wait_for_completion = AsyncMock(return_value=MagicMock(
+        status="completed",
+        title="Test",
+        duration_seconds=60,
+    ))
+    mock_frontend.get_transcript_text = AsyncMock(return_value="Transcript text")
+    mock_frontend.generate_summary = AsyncMock(return_value="<p>Summary</p>")
+
+    processor = JobProcessor(frontend_client=mock_frontend)
+    result = await processor.process_url("https://example.com/audio.mp3")
+
+    # Verify generate_summary was called with HTML suffix
+    mock_frontend.generate_summary.assert_called_once_with(
+        "test-id",
+        system_prompt_suffix=HTML_SUMMARY_SUFFIX,
+    )
