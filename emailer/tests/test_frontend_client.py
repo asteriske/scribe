@@ -193,3 +193,27 @@ class TestFrontendClient:
             result = await client.get_tag_config("nonexistent")
 
             assert result is None
+
+    @pytest.mark.asyncio
+    async def test_generate_summary_with_suffix(self):
+        """Test that generate_summary passes system_prompt_suffix."""
+        with patch("emailer.frontend_client.httpx.AsyncClient") as mock_client:
+            mock_instance = AsyncMock()
+            mock_client.return_value.__aenter__.return_value = mock_instance
+            mock_instance.post = AsyncMock(
+                return_value=MagicMock(
+                    status_code=200,
+                    json=lambda: {"summary_text": "HTML summary"},
+                )
+            )
+
+            client = FrontendClient(base_url="http://localhost:8000")
+            result = await client.generate_summary(
+                "test123",
+                system_prompt_suffix="Format as HTML"
+            )
+
+            assert result == "HTML summary"
+            mock_instance.post.assert_called_once()
+            call_args = mock_instance.post.call_args
+            assert call_args[1]["json"]["system_prompt_suffix"] == "Format as HTML"

@@ -167,12 +167,17 @@ class FrontendClient:
             logger.debug(f"GET /api/transcriptions/{transcription_id}/export/txt completed ({elapsed:.2f}s)")
             return response.text
 
-    async def generate_summary(self, transcription_id: str) -> str:
+    async def generate_summary(
+        self,
+        transcription_id: str,
+        system_prompt_suffix: str | None = None,
+    ) -> str:
         """
         Generate a summary for a transcription.
 
         Args:
             transcription_id: ID of the transcription
+            system_prompt_suffix: Optional suffix to append to system prompt
 
         Returns:
             Summary text
@@ -183,9 +188,13 @@ class FrontendClient:
         logger.debug(f"POST /api/summaries starting for {transcription_id}")
         start = time.monotonic()
         async with httpx.AsyncClient(timeout=360.0) as client:  # Longer timeout for LLM (must exceed summarizer's 300s)
+            payload = {"transcription_id": transcription_id}
+            if system_prompt_suffix:
+                payload["system_prompt_suffix"] = system_prompt_suffix
+
             response = await client.post(
                 f"{self.base_url}/api/summaries",
-                json={"transcription_id": transcription_id},
+                json=payload,
             )
             elapsed = time.monotonic() - start
             response.raise_for_status()
