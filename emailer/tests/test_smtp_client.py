@@ -34,8 +34,8 @@ class TestSmtpClient:
                 body="Test Body",
             )
 
-            # Verify SMTP was created with use_tls
-            mock_smtp.assert_called_once_with(hostname="smtp.test.com", port=465, use_tls=True)
+            # Verify SMTP was created with use_tls (port 465 = implicit TLS, no STARTTLS)
+            mock_smtp.assert_called_once_with(hostname="smtp.test.com", port=465, use_tls=True, start_tls=False)
             mock_instance.send_message.assert_called_once()
             call_args = mock_instance.send_message.call_args
             msg = call_args[0][0]
@@ -70,4 +70,4 @@ class TestSmtpClient:
             )
 
             # Verify SMTP was created without TLS
-            mock_smtp.assert_called_once_with(hostname="smtp.test.com", port=25, use_tls=False)
+            mock_smtp.assert_called_once_with(hostname="smtp.test.com", port=25, use_tls=False, start_tls=False)

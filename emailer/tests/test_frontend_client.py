@@ -112,7 +112,7 @@ class TestFrontendClient:
             mock_instance.get = AsyncMock(
                 return_value=MagicMock(
                     status_code=200,
-                    json=lambda: {"tags": ["podcast", "interview", "meeting"]},
+                    json=lambda: {"tags": {"podcast": {}, "interview": {}, "meeting": {}}},
                 )
             )
 
@@ -121,7 +121,7 @@ class TestFrontendClient:
 
             assert tags == {"podcast", "interview", "meeting"}
             mock_instance.get.assert_called_once_with(
-                "http://localhost:8000/api/tags"
+                "http://localhost:8000/api/config/tags"
             )
 
     @pytest.mark.asyncio
