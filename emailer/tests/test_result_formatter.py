@@ -11,34 +11,125 @@ from emailer.result_formatter import (
 class TestFormatSuccessEmail:
     """Tests for success email formatting."""
 
+    def test_format_success_email_returns_three_values(self):
+        """Test that format_success_email returns subject, html_body, text_body."""
+        result = format_success_email(
+            url="https://example.com/video",
+            title="Test Video",
+            duration_seconds=120,
+            summary="<p>This is an <strong>HTML</strong> summary.</p>",
+            transcript="This is the transcript.",
+        )
+
+        assert len(result) == 3
+        subject, html_body, text_body = result
+
+        # Check subject
+        assert "[Scribe]" in subject
+        assert "Test Video" in subject
+
+        # Check HTML body
+        assert "<!DOCTYPE html>" in html_body
+        assert "<p>This is an <strong>HTML</strong> summary.</p>" in html_body
+        assert "https://example.com/video" in html_body
+
+        # Check plain text body
+        assert "--- SUMMARY ---" in text_body
+        assert "--- TRANSCRIPT ---" in text_body
+        assert "This is the transcript." in text_body
+
+    def test_format_success_email_html_escapes_transcript(self):
+        """Test that transcript is HTML-escaped in HTML body."""
+        _, html_body, _ = format_success_email(
+            url="https://example.com",
+            title="Test",
+            duration_seconds=60,
+            summary="<p>Summary</p>",
+            transcript="Text with <script>alert('xss')</script> tags",
+        )
+
+        assert "<script>" not in html_body
+        assert "&lt;script&gt;" in html_body
+
     def test_basic_format(self):
-        subject, body = format_success_email(
+        """Test basic email formatting with all components."""
+        subject, html_body, text_body = format_success_email(
             url="https://www.youtube.com/watch?v=abc123",
             title="Test Video",
             duration_seconds=125,
-            summary="This is the summary.",
+            summary="<p>This is the summary.</p>",
             transcript="This is the full transcript.",
         )
 
         assert subject == "[Scribe] Test Video"
-        assert "https://www.youtube.com/watch?v=abc123" in body
-        assert "2:05" in body  # duration formatted
-        assert "--- SUMMARY ---" in body
-        assert "This is the summary." in body
-        assert "--- TRANSCRIPT ---" in body
-        assert "This is the full transcript." in body
+        # HTML body checks
+        assert "https://www.youtube.com/watch?v=abc123" in html_body
+        assert "2:05" in html_body  # duration formatted
+        assert "This is the summary." in html_body
+        assert "This is the full transcript." in html_body
+        # Plain text body checks
+        assert "https://www.youtube.com/watch?v=abc123" in text_body
+        assert "2:05" in text_body  # duration formatted
+        assert "--- SUMMARY ---" in text_body
+        assert "--- TRANSCRIPT ---" in text_body
+        assert "This is the full transcript." in text_body
 
     def test_long_title_in_subject(self):
-        long_title = "A" * 100
-        subject, _ = format_success_email(
+        """Test that long titles are truncated in subject."""
+        long_title = "A" * 150
+        subject, _, _ = format_success_email(
             url="https://youtu.be/abc",
             title=long_title,
             duration_seconds=60,
-            summary="Summary",
+            summary="<p>Summary</p>",
             transcript="Transcript",
         )
-        # Subject should be reasonable length
+        # Subject should be reasonable length (truncated at 100 chars + prefix + ellipsis)
         assert len(subject) <= 120
+
+    def test_html_body_has_styling(self):
+        """Test that HTML body includes CSS styling."""
+        _, html_body, _ = format_success_email(
+            url="https://example.com",
+            title="Test",
+            duration_seconds=60,
+            summary="<p>Summary</p>",
+            transcript="Transcript",
+        )
+
+        assert "<style>" in html_body
+        assert "font-family" in html_body
+
+    def test_plain_text_converts_html_summary(self):
+        """Test that HTML summary is converted to plain text in text body."""
+        _, _, text_body = format_success_email(
+            url="https://example.com",
+            title="Test",
+            duration_seconds=60,
+            summary="<p>This is <strong>bold</strong> and <em>italic</em> text.</p>",
+            transcript="Transcript",
+        )
+
+        # HTML tags should not appear in plain text
+        assert "<p>" not in text_body
+        assert "<strong>" not in text_body
+        assert "<em>" not in text_body
+        # But content should be there
+        assert "bold" in text_body
+        assert "italic" in text_body
+
+    def test_url_escaped_in_html(self):
+        """Test that URL is properly escaped in HTML body."""
+        _, html_body, _ = format_success_email(
+            url="https://example.com/video?id=123&name=test",
+            title="Test",
+            duration_seconds=60,
+            summary="<p>Summary</p>",
+            transcript="Transcript",
+        )
+
+        # & should be escaped in HTML
+        assert "&amp;" in html_body or "https://example.com/video?id=123&name=test" in html_body
 
 
 class TestFormatErrorEmail:
