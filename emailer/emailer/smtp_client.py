@@ -31,6 +31,7 @@ class SmtpClient:
         to_addr: str,
         subject: str,
         body: str,
+        html_body: str | None = None,
     ) -> None:
         """
         Send an email.
@@ -40,12 +41,19 @@ class SmtpClient:
             to_addr: Recipient email address
             subject: Email subject
             body: Email body (plain text)
+            html_body: Optional HTML body (creates multipart email)
         """
         msg = EmailMessage()
         msg["Subject"] = subject
         msg["From"] = from_addr
         msg["To"] = to_addr
+
+        # Set plain text as base content
         msg.set_content(body)
+
+        # Add HTML alternative if provided
+        if html_body:
+            msg.add_alternative(html_body, subtype="html")
 
         # Port 587 uses STARTTLS (start_tls=True), port 465 uses implicit TLS (use_tls=True)
         use_implicit_tls = self.port == 465

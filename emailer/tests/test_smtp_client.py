@@ -71,3 +71,43 @@ class TestSmtpClient:
 
             # Verify SMTP was created without TLS
             mock_smtp.assert_called_once_with(hostname="smtp.test.com", port=25, use_tls=False, start_tls=False)
+
+    @pytest.mark.asyncio
+    async def test_send_email_with_html_body(self):
+        """Test sending email with HTML alternative."""
+        with patch("emailer.smtp_client.SMTP") as mock_smtp:
+            mock_instance = AsyncMock()
+            mock_smtp.return_value = mock_instance
+            mock_instance.connect = AsyncMock()
+            mock_instance.login = AsyncMock()
+            mock_instance.send_message = AsyncMock()
+            mock_instance.quit = AsyncMock()
+
+            client = SmtpClient(
+                host="smtp.test.com",
+                port=587,
+                user="test@test.com",
+                password="testpass",
+                use_tls=True,
+            )
+
+            await client.send_email(
+                from_addr="from@test.com",
+                to_addr="to@test.com",
+                subject="Test Subject",
+                body="Plain text body",
+                html_body="<p>HTML body</p>",
+            )
+
+            mock_instance.send_message.assert_called_once()
+            call_args = mock_instance.send_message.call_args
+            msg = call_args[0][0]
+
+            # Check it's a multipart message
+            assert msg.is_multipart()
+
+            # Get parts
+            parts = list(msg.iter_parts())
+            content_types = [part.get_content_type() for part in parts]
+            assert "text/plain" in content_types
+            assert "text/html" in content_types
