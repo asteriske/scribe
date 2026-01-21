@@ -386,7 +386,8 @@ async def create_summary(
         api_endpoint=request.api_endpoint,
         model=request.model,
         api_key=request.api_key,
-        system_prompt=request.system_prompt
+        system_prompt=request.system_prompt,
+        system_prompt_suffix=request.system_prompt_suffix,
     )
 
     if not result.success:

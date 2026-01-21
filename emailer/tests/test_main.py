@@ -365,3 +365,38 @@ class TestSendResultEmail:
         call_args_list = service.smtp.send_email.call_args_list
         recipients = [call.kwargs["to_addr"] for call in call_args_list]
         assert recipients == ["alice@example.com", "bob@example.com", "carol@example.com"]
+
+    @pytest.mark.asyncio
+    async def test_send_result_email_uses_html(self, mock_settings):
+        """Test that successful result emails include HTML body."""
+        from emailer.job_processor import JobResult
+        from emailer.imap_client import EmailMessage
+
+        service = EmailerService(mock_settings)
+        service.smtp = AsyncMock()
+
+        email = EmailMessage(
+            msg_num=1,
+            sender="user@test.com",
+            subject="Test",
+            body_text="",
+            body_html="",
+        )
+
+        result = JobResult(
+            url="https://example.com/video",
+            success=True,
+            title="Test Video",
+            summary="<p>HTML summary</p>",
+            transcript="Transcript text",
+            duration_seconds=120,
+        )
+
+        await service._send_result_email(email, result, tag_config=None)
+
+        service.smtp.send_email.assert_called_once()
+        call_kwargs = service.smtp.send_email.call_args[1]
+
+        # Verify html_body was passed
+        assert "html_body" in call_kwargs
+        assert "<!DOCTYPE html>" in call_kwargs["html_body"]

@@ -54,3 +54,14 @@ def test_update_tags_request():
     from frontend.api.models import UpdateTagsRequest
     request = UpdateTagsRequest(tags=["new", "tags"])
     assert request.tags == ["new", "tags"]
+
+
+def test_summary_request_accepts_suffix():
+    """Test that SummaryRequest accepts system_prompt_suffix."""
+    from frontend.api.models import SummaryRequest
+
+    request = SummaryRequest(
+        transcription_id="test123",
+        system_prompt_suffix="Format as HTML"
+    )
+    assert request.system_prompt_suffix == "Format as HTML"

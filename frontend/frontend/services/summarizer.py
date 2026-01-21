@@ -122,7 +122,8 @@ class SummarizerService:
         api_endpoint: Optional[str] = None,
         model: Optional[str] = None,
         api_key: Optional[str] = None,
-        system_prompt: Optional[str] = None
+        system_prompt: Optional[str] = None,
+        system_prompt_suffix: Optional[str] = None,
     ) -> SummaryResult:
         """
         Generate a summary for a transcription.
@@ -136,6 +137,7 @@ class SummarizerService:
             model: Optional override for model
             api_key: Optional override for API key
             system_prompt: Optional override for system prompt
+            system_prompt_suffix: Optional suffix to append to the resolved prompt
 
         Returns:
             SummaryResult with success status, summary object, and any error
@@ -165,6 +167,11 @@ class SummarizerService:
         final_model = model or resolved.model
         final_key = api_key if api_key is not None else resolved.api_key
         final_prompt = system_prompt or resolved.system_prompt
+
+        # Append suffix if provided
+        if system_prompt_suffix:
+            final_prompt = f"{final_prompt}\n\n{system_prompt_suffix}"
+
         config_source = resolved.config_source if not any([api_endpoint, model, api_key, system_prompt]) else "custom"
 
         # Load transcription text

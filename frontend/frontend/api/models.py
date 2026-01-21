@@ -56,6 +56,7 @@ class SummaryRequest(BaseModel):
     model: Optional[str] = Field(None, description="Override model name")
     api_key: Optional[str] = Field(None, description="Override API key")
     system_prompt: Optional[str] = Field(None, description="Override system prompt")
+    system_prompt_suffix: Optional[str] = Field(None, description="Append to system prompt")
 
 
 class SummaryResponse(BaseModel):

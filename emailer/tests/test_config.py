@@ -27,7 +27,7 @@ def test_config_loads_from_environment(monkeypatch):
     assert settings.imap_host == "imap.test.com"
     assert settings.imap_port == 993
     assert settings.smtp_host == "smtp.test.com"
-    assert settings.poll_interval_seconds == 300  # default
+    assert settings.poll_interval_seconds == 30  # default
     assert settings.max_concurrent_jobs == 3  # default
 
 
@@ -67,7 +67,7 @@ def test_config_defaults(monkeypatch):
     assert settings.imap_folder_inbox == "ToScribe"
     assert settings.imap_folder_done == "ScribeDone"
     assert settings.imap_folder_error == "ScribeError"
-    assert settings.poll_interval_seconds == 300
+    assert settings.poll_interval_seconds == 30
     assert settings.max_concurrent_jobs == 3
     assert settings.default_tag == "email"
 

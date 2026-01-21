@@ -207,7 +207,7 @@ class EmailerService:
     ) -> None:
         """Send result or error email based on job result."""
         if result.success:
-            subject, body = format_success_email(
+            subject, html_body, text_body = format_success_email(
                 url=result.url,
                 title=result.title or "Untitled",
                 duration_seconds=result.duration_seconds or 0,
@@ -226,7 +226,8 @@ class EmailerService:
                     from_addr=self.settings.from_email_address,
                     to_addr=to_addr,
                     subject=subject,
-                    body=body,
+                    body=text_body,
+                    html_body=html_body,
                 )
         else:
             subject, body = format_error_email(
