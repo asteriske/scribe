@@ -73,6 +73,26 @@ class ImapClient:
             self._client = None
             logger.info("Disconnected from IMAP server")
 
+    async def reconnect(self) -> None:
+        """Reconnect to IMAP server."""
+        logger.info("Reconnecting to IMAP server...")
+        await self.disconnect()
+        await self.connect()
+
+    def is_connection_error(self, error: Exception) -> bool:
+        """Check if an exception indicates a dead connection."""
+        error_str = str(error).lower()
+        connection_errors = [
+            "eof",
+            "broken pipe",
+            "connection reset",
+            "connection refused",
+            "connection closed",
+            "socket error",
+            "timed out",
+        ]
+        return any(err in error_str for err in connection_errors)
+
     async def select_folder(self, folder: str) -> None:
         """Select an IMAP folder."""
         status, _ = await self._run_sync(self._client.select, folder)

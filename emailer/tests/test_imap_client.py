@@ -97,3 +97,59 @@ class TestImapClient:
         mock_client.copy.assert_called_with("123", "ScribeDone")
         mock_client.store.assert_called_with("123", "+FLAGS", "\\Deleted")
         mock_client.expunge.assert_called_once()
+
+    def test_is_connection_error_detects_eof(self):
+        """Test that is_connection_error detects EOF errors."""
+        client = ImapClient(
+            host="imap.test.com",
+            port=993,
+            user="test@test.com",
+            password="testpass",
+        )
+        assert client.is_connection_error(Exception("socket error: EOF"))
+        assert client.is_connection_error(Exception("command: SELECT => socket error: EOF"))
+
+    def test_is_connection_error_detects_broken_pipe(self):
+        """Test that is_connection_error detects broken pipe errors."""
+        client = ImapClient(
+            host="imap.test.com",
+            port=993,
+            user="test@test.com",
+            password="testpass",
+        )
+        assert client.is_connection_error(Exception("socket error: [Errno 32] Broken pipe"))
+        assert client.is_connection_error(OSError(32, "Broken pipe"))
+
+    def test_is_connection_error_returns_false_for_other_errors(self):
+        """Test that is_connection_error returns False for non-connection errors."""
+        client = ImapClient(
+            host="imap.test.com",
+            port=993,
+            user="test@test.com",
+            password="testpass",
+        )
+        assert not client.is_connection_error(Exception("Invalid credentials"))
+        assert not client.is_connection_error(ValueError("Bad value"))
+
+    @pytest.mark.asyncio
+    async def test_reconnect_disconnects_and_connects(self):
+        """Test that reconnect closes and reopens connection."""
+        with patch("emailer.imap_client.imaplib") as mock_imaplib:
+            mock_instance = MagicMock()
+            mock_imaplib.IMAP4_SSL.return_value = mock_instance
+
+            client = ImapClient(
+                host="imap.test.com",
+                port=993,
+                user="test@test.com",
+                password="testpass",
+                use_ssl=True,
+            )
+            old_client = MagicMock()
+            client._client = old_client
+
+            await client.reconnect()
+
+            old_client.logout.assert_called_once()
+            mock_imaplib.IMAP4_SSL.assert_called_once_with("imap.test.com", 993)
+            mock_instance.login.assert_called_once()

@@ -116,6 +116,12 @@ class EmailerService:
 
         except Exception as e:
             logger.error(f"Error during poll: {e}")
+            # Reconnect on connection errors (EOF, broken pipe, etc.)
+            if self.imap.is_connection_error(e):
+                try:
+                    await self.imap.reconnect()
+                except Exception as reconnect_err:
+                    logger.error(f"Reconnection failed: {reconnect_err}")
 
     async def _process_email_with_semaphore(self, email: EmailMessage) -> None:
         """Process email with concurrency limit."""
