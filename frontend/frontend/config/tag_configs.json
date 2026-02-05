@@ -24,6 +24,12 @@
       "api_key_ref": null,
       "system_prompt": "Summarize the following podcast subscription. Pay special attention to main topics, questions asked and hot takes or counter-intuitive opinions.",
       "destination_emails": ["kindle@patrickmccarthy.cc"]
+    },
+    "digest": {
+      "api_endpoint": "http://10.100.2.50:1234/v1",
+      "model": "openai/gpt-oss-20b",
+      "api_key_ref": null,
+      "system_prompt": "Summarize the following podcast subscription. Pay special attention to main topics, questions asked and hot takes or counter-intuitive opinions."
     }
   }
 }
