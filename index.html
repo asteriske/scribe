@@ -194,12 +194,115 @@
       margin-bottom: 0;
     }
 
+    /* ── Workflow / Email Mockups ──────────────────────── */
+    .workflow {
+      display: grid;
+      grid-template-columns: 2fr auto 3fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .workflow-arrow {
+      font-size: 1.5rem;
+      color: var(--muted);
+      align-self: center;
+      padding-top: 2rem;
+    }
+    .email-mockup {
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .email-chrome {
+      background: var(--border);
+      padding: 0.6rem 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .chrome-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--muted);
+      opacity: 0.5;
+    }
+    .chrome-title {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-left: 0.5rem;
+    }
+    .email-fields {
+      padding: 0.75rem 1rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .email-field {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.35rem 0;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .email-field:last-child {
+      border-bottom: none;
+    }
+    .email-label {
+      color: var(--muted);
+      min-width: 3.5rem;
+      font-weight: 500;
+    }
+    .email-value {
+      color: var(--text);
+    }
+    .email-body {
+      padding: 1rem;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .email-body ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .email-body ul li {
+      margin-bottom: 0.35rem;
+    }
+    .email-body p {
+      margin-bottom: 0.5rem;
+    }
+    .email-section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .email-section-title:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+    .truncated {
+      color: var(--muted);
+      font-style: italic;
+    }
+
     @media (max-width: 768px) {
       .steps {
         grid-template-columns: 1fr;
       }
       .modes {
         grid-template-columns: 1fr;
+      }
+      .workflow {
+        grid-template-columns: 1fr;
+      }
+      .workflow-arrow {
+        text-align: center;
+        padding-top: 0;
+        font-size: 1.25rem;
       }
     }
   </style>
@@ -282,6 +385,77 @@
           <div class="mode-sample">
             <p class="mode-sample-label">Example output</p>
             <p>The most provocative claim: small language models running locally will replace cloud APIs for 80% of use cases within 18 months. The hosts disagree sharply on timeline...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- See It In Action -->
+  <section class="band band--tinted">
+    <div class="band-content">
+      <h2 class="section-title">See it in action</h2>
+      <div class="workflow">
+        <!-- You send -->
+        <div class="email-mockup">
+          <div class="email-chrome">
+            <span class="chrome-dot"></span>
+            <span class="chrome-dot"></span>
+            <span class="chrome-dot"></span>
+            <span class="chrome-title">New Message</span>
+          </div>
+          <div class="email-fields">
+            <div class="email-field">
+              <span class="email-label">To</span>
+              <span class="email-value">scribe@example.com</span>
+            </div>
+            <div class="email-field">
+              <span class="email-label">Subject</span>
+              <span class="email-value">check this out</span>
+            </div>
+          </div>
+          <div class="email-body">
+            <p>https://www.youtube.com/watch?v=abc123</p>
+          </div>
+        </div>
+
+        <!-- Arrow -->
+        <div class="workflow-arrow">→</div>
+
+        <!-- You receive -->
+        <div class="email-mockup email-mockup--received">
+          <div class="email-chrome">
+            <span class="chrome-dot"></span>
+            <span class="chrome-dot"></span>
+            <span class="chrome-dot"></span>
+            <span class="chrome-title">Inbox</span>
+          </div>
+          <div class="email-fields">
+            <div class="email-field">
+              <span class="email-label">From</span>
+              <span class="email-value">Scribe</span>
+            </div>
+            <div class="email-field">
+              <span class="email-label">Subject</span>
+              <span class="email-value">Highlights — The Future of Small Language Models</span>
+            </div>
+          </div>
+          <div class="email-body">
+            <h4 class="email-section-title">Summary</h4>
+            <ul>
+              <li>Smaller, specialized models are outperforming large general-purpose ones on domain-specific tasks by significant margins</li>
+              <li>The cost of running inference locally has dropped 10x in the past year, making on-device AI practical for consumer hardware</li>
+              <li>Privacy-first architectures are becoming a competitive advantage rather than a constraint</li>
+            </ul>
+            <p class="truncated">...</p>
+
+            <h4 class="email-section-title">Creator's Notes</h4>
+            <p>This week we sit down with Dr. Sarah Chen, who leads the efficient ML research group at Stanford. She shares her lab's latest findings on model distillation and why she thinks the "bigger is better" era is ending.</p>
+            <p class="truncated">...</p>
+
+            <h4 class="email-section-title">Transcript</h4>
+            <p>Welcome back to the show everybody. Today we have a really special guest, someone whose work I've been following for years now. Dr. Sarah Chen, welcome to the podcast.</p>
+            <p class="truncated">...</p>
           </div>
         </div>
       </div>
