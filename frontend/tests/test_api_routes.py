@@ -348,3 +348,75 @@ def test_get_tag_config_not_found(client, monkeypatch):
 
     response = client.get("/api/tags/nonexistent")
     assert response.status_code == 404
+
+
+def test_transcribe_apple_podcasts_fetches_show_notes(client, db_session, monkeypatch):
+    """Test that Apple Podcasts URLs trigger show notes fetching."""
+    import json
+    from unittest.mock import MagicMock
+    from frontend.core.models import Transcription
+    from frontend.utils.url_parser import URLInfo, SourceType
+    import frontend.api.routes as routes
+
+    # Mock parse_url
+    mock_url_info = URLInfo(
+        id="apple_podcast_test123",
+        source_type=SourceType.APPLE_PODCASTS,
+        original_url="https://podcasts.apple.com/us/podcast/test/id123?i=456"
+    )
+    monkeypatch.setattr(routes, 'parse_url', lambda x: mock_url_info)
+
+    # Mock Orchestrator
+    mock_orchestrator = MagicMock()
+    monkeypatch.setattr(routes, 'Orchestrator', lambda: mock_orchestrator)
+
+    # Mock ApplePodcastsScraper
+    mock_scraper = MagicMock()
+    mock_scraper.is_apple_podcasts_url.return_value = True
+    mock_scraper.fetch_show_notes.return_value = "Show notes content here"
+    monkeypatch.setattr(routes, 'ApplePodcastsScraper', lambda: mock_scraper)
+
+    response = client.post(
+        "/api/transcribe",
+        json={"url": "https://podcasts.apple.com/us/podcast/test/id123?i=456"}
+    )
+
+    assert response.status_code == 202
+    mock_scraper.fetch_show_notes.assert_called_once()
+
+    # Verify source_context was saved
+    t = db_session.query(Transcription).filter_by(id="apple_podcast_test123").first()
+    assert t is not None
+    assert t.source_context == "Show notes content here"
+
+
+def test_transcribe_non_apple_url_no_scraper(client, db_session, monkeypatch):
+    """Test that non-Apple URLs don't trigger show notes fetching."""
+    from unittest.mock import MagicMock
+    from frontend.utils.url_parser import URLInfo, SourceType
+    import frontend.api.routes as routes
+
+    # Mock parse_url
+    mock_url_info = URLInfo(
+        id="youtube_test456",
+        source_type=SourceType.YOUTUBE,
+        original_url="https://youtube.com/watch?v=test123"
+    )
+    monkeypatch.setattr(routes, 'parse_url', lambda x: mock_url_info)
+
+    # Mock Orchestrator
+    mock_orchestrator = MagicMock()
+    monkeypatch.setattr(routes, 'Orchestrator', lambda: mock_orchestrator)
+
+    # Mock ApplePodcastsScraper
+    mock_scraper = MagicMock()
+    mock_scraper.is_apple_podcasts_url.return_value = False
+    monkeypatch.setattr(routes, 'ApplePodcastsScraper', lambda: mock_scraper)
+
+    response = client.post(
+        "/api/transcribe",
+        json={"url": "https://youtube.com/watch?v=test123"}
+    )
+
+    assert response.status_code == 202
+    mock_scraper.fetch_show_notes.assert_not_called()
