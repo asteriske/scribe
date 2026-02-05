@@ -93,6 +93,42 @@
       font-size: 1.1rem;
       color: var(--text);
     }
+
+    /* ── How It Works ─────────────────────────────────── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+    .step {
+      text-align: center;
+    }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent);
+      color: #fff;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .step h3 {
+      margin-bottom: 0.5rem;
+    }
+    .step p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 768px) {
+      .steps {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -102,6 +138,30 @@
       <h1>Scribe</h1>
       <p class="tagline">Turn podcasts and videos into readable summaries</p>
       <p class="value-prop">Email a link. Get a transcript and AI summary back in minutes.</p>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="band band--tinted">
+    <div class="band-content">
+      <h2 class="section-title">How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <span class="step-num">1</span>
+          <h3>Send</h3>
+          <p>Email a YouTube or podcast link to Scribe</p>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <h3>Choose a mode</h3>
+          <p>Add a keyword like <code>recipe</code> or <code>digest</code> to the subject line — or send with any subject for the default highlights mode</p>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <h3>Receive</h3>
+          <p>Get back a structured summary, creator's notes, and full transcript</p>
+        </div>
+      </div>
     </div>
   </section>
 </body>
