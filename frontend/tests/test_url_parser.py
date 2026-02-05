@@ -87,3 +87,15 @@ def test_podcast_addict_case_insensitive():
     info = parse_url(url)
     assert info.source_type == SourceType.PODCAST_ADDICT
     assert info.id == "podcast_addict_215066511"
+
+
+def test_spotify_url_rejected():
+    """Test Spotify URLs are rejected with helpful message"""
+    with pytest.raises(ValueError, match="Spotify URLs are not supported"):
+        parse_url("https://open.spotify.com/episode/2309CSMAUfOyJprXS6wq8g")
+
+
+def test_spotify_url_rejected_case_insensitive():
+    """Test Spotify URL rejection is case-insensitive"""
+    with pytest.raises(ValueError, match="DRM restrictions"):
+        parse_url("https://Open.Spotify.com/episode/abc123")

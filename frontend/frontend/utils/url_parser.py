@@ -176,6 +176,13 @@ def parse_url(url: str) -> URLInfo:
             podcast_id=podcast_id
         )
 
+    # Spotify - not supported due to DRM
+    elif 'spotify.com' in url_lower or 'open.spotify.com' in url_lower:
+        raise ValueError(
+            "Spotify URLs are not supported due to DRM restrictions. "
+            "Try finding this episode on YouTube or Apple Podcasts instead."
+        )
+
     # Direct audio URL
     else:
         # Validate it looks like an audio file
