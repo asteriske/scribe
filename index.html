@@ -5,194 +5,498 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scribe - Turn podcasts and videos into readable summaries</title>
   <style>
+    /* ── Theme tokens ─────────────────────────────────── */
     :root {
       --bg: #fafafa;
-      --text: #222;
-      --muted: #666;
+      --tinted: #f0f2f5;
+      --text: #1a1a1a;
+      --muted: #6b7280;
       --accent: #2563eb;
-      --card-bg: #fff;
-      --border: #e5e5e5;
+      --card-bg: #ffffff;
+      --border: #e2e5e9;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #1a1a1a;
-        --text: #eee;
-        --muted: #999;
+        --bg: #111113;
+        --tinted: #1a1c20;
+        --text: #e8e8e8;
+        --muted: #9ca3af;
         --accent: #60a5fa;
-        --card-bg: #2a2a2a;
-        --border: #444;
+        --card-bg: #222428;
+        --border: #333640;
       }
     }
+
+    /* ── Reset ─────────────────────────────────────────── */
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Base ──────────────────────────────────────────── */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   Helvetica, Arial, sans-serif, "Apple Color Emoji",
+                   "Segoe UI Emoji";
       background: var(--bg);
       color: var(--text);
       line-height: 1.6;
-      padding: 2rem 1rem;
-      max-width: 800px;
+    }
+
+    /* ── Full-width band layout ───────────────────────── */
+    .band {
+      width: 100%;
+      padding: 4rem 1.5rem;
+    }
+    .band--tinted {
+      background: var(--tinted);
+    }
+    .band-content {
+      max-width: 960px;
       margin: 0 auto;
     }
-    h1 { font-size: 2rem; margin-bottom: 0.5rem; }
-    h2 { font-size: 1.25rem; margin: 2rem 0 1rem; color: var(--muted); }
-    p { margin-bottom: 1rem; }
-    .hero { text-align: center; padding: 2rem 0 3rem; }
-    .hero p { color: var(--muted); font-size: 1.1rem; }
-    .steps {
-      display: grid;
-      gap: 1rem;
-      margin: 1rem 0;
-    }
-    .step {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1rem 1.25rem;
-    }
-    .step-num {
-      display: inline-block;
-      background: var(--accent);
-      color: #fff;
-      width: 1.5rem;
-      height: 1.5rem;
-      border-radius: 50%;
+
+    /* ── Typography ────────────────────────────────────── */
+    .section-title {
       text-align: center;
-      font-size: 0.875rem;
-      line-height: 1.5rem;
-      margin-right: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 2rem;
     }
-    .sources {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin: 1rem 0;
-    }
-    .source {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 0.5rem 1rem;
-      font-size: 0.9rem;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1rem 0;
-    }
-    th, td {
-      text-align: left;
-      padding: 0.75rem;
-      border-bottom: 1px solid var(--border);
-    }
-    th { color: var(--muted); font-weight: 500; }
+
     code {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      padding: 0.125rem 0.375rem;
+      padding: 0.125rem 0.4rem;
       border-radius: 4px;
-      font-size: 0.875rem;
+      font-size: 0.875em;
     }
-    .example {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.25rem;
-      margin: 1rem 0;
+
+    /* ── Hero ──────────────────────────────────────────── */
+    .hero {
+      padding-top: 6rem;
+      padding-bottom: 6rem;
+      text-align: center;
     }
-    .example-label {
-      font-size: 0.75rem;
+    .hero h1 {
+      font-size: 2.75rem;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+    .hero .tagline {
+      font-size: 1.25rem;
       color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .hero .value-prop {
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+
+    /* ── How It Works ─────────────────────────────────── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+    .step {
+      text-align: center;
+    }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent);
+      color: #fff;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .step h3 {
       margin-bottom: 0.5rem;
     }
-    .example pre {
-      white-space: pre-wrap;
+    .step p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    /* ── Modes ───────────────────────────────────────── */
+    .modes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    .mode-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      border-top: 3px solid var(--accent);
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .mode-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .mode-header h3 {
+      font-size: 1.1rem;
+    }
+    .mode-badge {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: var(--accent);
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+    .mode-trigger {
       font-size: 0.875rem;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+    .mode-desc {
+      font-size: 0.925rem;
+      margin-bottom: 1rem;
       line-height: 1.5;
     }
+    .mode-sample {
+      background: var(--tinted);
+      border-radius: 6px;
+      padding: 1rem;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .mode-sample-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .mode-sample ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .mode-sample ul li {
+      margin-bottom: 0.25rem;
+    }
+    .mode-sample p {
+      margin-bottom: 0.5rem;
+    }
+    .mode-sample p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ── Workflow / Email Mockups ──────────────────────── */
+    .workflow {
+      display: grid;
+      grid-template-columns: 2fr auto 3fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .workflow-arrow {
+      font-size: 1.5rem;
+      color: var(--muted);
+      align-self: center;
+      padding-top: 2rem;
+    }
+    .email-mockup {
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .email-chrome {
+      background: var(--border);
+      padding: 0.6rem 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .chrome-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--muted);
+      opacity: 0.5;
+    }
+    .chrome-title {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-left: 0.5rem;
+    }
+    .email-fields {
+      padding: 0.75rem 1rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .email-field {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.35rem 0;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .email-field:last-child {
+      border-bottom: none;
+    }
+    .email-label {
+      color: var(--muted);
+      min-width: 3.5rem;
+      font-weight: 500;
+    }
+    .email-value {
+      color: var(--text);
+    }
+    .email-body {
+      padding: 1rem;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .email-body ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .email-body ul li {
+      margin-bottom: 0.35rem;
+    }
+    .email-body p {
+      margin-bottom: 0.5rem;
+    }
+    .email-section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .email-section-title:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+    .truncated {
+      color: var(--muted);
+      font-style: italic;
+    }
+    .highlight-keyword {
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      color: var(--accent);
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+    .workflow-callout {
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 0.75rem;
+      border-radius: 0 6px 6px 0;
+      margin-top: 0.75rem;
+      line-height: 1.4;
+    }
+
+    /* ── CTA ────────────────────────────────────────────── */
     .cta {
       text-align: center;
-      padding: 2rem 0;
+      padding: 4rem 0;
+      font-size: 1.1rem;
       color: var(--muted);
+    }
+
+    @media (max-width: 768px) {
+      .steps {
+        grid-template-columns: 1fr;
+      }
+      .modes {
+        grid-template-columns: 1fr;
+      }
+      .workflow {
+        grid-template-columns: 1fr;
+      }
+      .workflow-arrow {
+        text-align: center;
+        padding-top: 0;
+        font-size: 1.25rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="hero">
-    <h1>Scribe</h1>
-    <p>Turn podcasts and videos into readable summaries</p>
-  </div>
-
-  <h2>How it works</h2>
-  <div class="steps">
-    <div class="step">
-      <span class="step-num">1</span>
-      Email a YouTube or podcast URL to the service
+  <!-- Hero -->
+  <section class="band hero">
+    <div class="band-content">
+      <h1>Scribe</h1>
+      <p class="tagline">Turn podcasts and videos into readable summaries</p>
+      <p class="value-prop">Email a link. Get a transcript and AI summary back in minutes.</p>
     </div>
-    <div class="step">
-      <span class="step-num">2</span>
-      Receive a transcription and summary within minutes
+  </section>
+
+  <!-- How It Works -->
+  <section class="band band--tinted">
+    <div class="band-content">
+      <h2 class="section-title">How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <span class="step-num">1</span>
+          <h3>Send</h3>
+          <p>Email a YouTube or podcast link to Scribe</p>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <h3>Choose a mode</h3>
+          <p>Put a mode name like <code>recipe</code> or <code>digest</code> as your subject line. One mode per email — or leave it blank for the default highlights mode</p>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <h3>Receive</h3>
+          <p>Get back a structured summary, creator's notes, and full transcript</p>
+        </div>
+      </div>
     </div>
-    <div class="step">
-      <span class="step-num">3</span>
-      Optionally specify a mode for tailored output
+  </section>
+
+  <!-- Modes -->
+  <section class="band">
+    <div class="band-content">
+      <h2 class="section-title">Modes</h2>
+      <div class="modes">
+        <div class="mode-card">
+          <div class="mode-header">
+            <h3>Highlights</h3>
+            <span class="mode-badge">Default</span>
+          </div>
+          <p class="mode-trigger">Just send a link — no keyword needed</p>
+          <p class="mode-desc">Extracts key points as a concise bullet-point list. Focuses on main ideas, notable facts, and actionable takeaways.</p>
+          <div class="mode-sample">
+            <p class="mode-sample-label">Example output</p>
+            <ul>
+              <li>Open-source models approaching proprietary performance levels</li>
+              <li>Competitive advantage shifting to data quality and fine-tuning</li>
+              <li>Enterprise adoption accelerating but governance lagging</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mode-card">
+          <div class="mode-header">
+            <h3>Recipe</h3>
+          </div>
+          <p class="mode-trigger">Subject line: <code>recipe</code></p>
+          <p class="mode-desc">Extracts ingredients with amounts and step-by-step cooking instructions. Perfect for video recipes you want to save and actually cook from.</p>
+          <div class="mode-sample">
+            <p class="mode-sample-label">Example output</p>
+            <p><strong>Ingredients:</strong> 1 lb ditalini, 2 cans cannellini beans, 4 cloves garlic...</p>
+            <p><strong>Step 1:</strong> Saut&#233; diced onion and garlic in olive oil until translucent...</p>
+          </div>
+        </div>
+
+        <div class="mode-card">
+          <div class="mode-header">
+            <h3>Digest</h3>
+          </div>
+          <p class="mode-trigger">Subject line: <code>digest</code></p>
+          <p class="mode-desc">An opinionated analysis highlighting main topics, interesting questions, and counter-intuitive takes. For when you want more than just the facts.</p>
+          <div class="mode-sample">
+            <p class="mode-sample-label">Example output</p>
+            <p>The most provocative claim: small language models running locally will replace cloud APIs for 80% of use cases within 18 months. The hosts disagree sharply on timeline...</p>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <h2>Supported sources</h2>
-  <div class="sources">
-    <span class="source">YouTube videos</span>
-    <span class="source">Apple Podcasts</span>
-    <span class="source">Direct audio URLs (.mp3, .m4a)</span>
-  </div>
+  <!-- See It In Action -->
+  <section class="band band--tinted">
+    <div class="band-content">
+      <h2 class="section-title">See it in action</h2>
+      <div class="workflow">
+        <!-- You send -->
+        <div class="workflow-send">
+          <div class="email-mockup">
+            <div class="email-chrome">
+              <span class="chrome-dot"></span>
+              <span class="chrome-dot"></span>
+              <span class="chrome-dot"></span>
+              <span class="chrome-title">New Message</span>
+            </div>
+            <div class="email-fields">
+              <div class="email-field">
+                <span class="email-label">To</span>
+                <span class="email-value">scribe@example.com</span>
+              </div>
+              <div class="email-field">
+                <span class="email-label">Subject</span>
+                <span class="email-value"><span class="highlight-keyword">highlights</span></span>
+              </div>
+            </div>
+            <div class="email-body">
+              <p>https://www.youtube.com/watch?v=abc123</p>
+            </div>
+          </div>
+          <div class="workflow-callout">
+            The subject line is your mode selector — just use the mode name. One mode per email.
+          </div>
+        </div>
 
-  <h2>Available modes</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Mode</th>
-        <th>How to use</th>
-        <th>What you get</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Default</td>
-        <td>Just send the URL</td>
-        <td>Bullet-point highlights</td>
-      </tr>
-      <tr>
-        <td>Recipe</td>
-        <td>Include <code>recipe</code> in subject</td>
-        <td>Ingredients + steps</td>
-      </tr>
-      <tr>
-        <td>Digest</td>
-        <td>Include <code>digest</code> in subject</td>
-        <td>Incisive analysis with hot takes</td>
-      </tr>
-    </tbody>
-  </table>
+        <!-- Arrow -->
+        <div class="workflow-arrow">→</div>
 
-  <h2>Example output</h2>
-  <div class="example">
-    <div class="example-label">Sample highlights summary</div>
-    <pre>Key points from "The Future of AI" podcast:
+        <!-- You receive -->
+        <div class="email-mockup email-mockup--received">
+          <div class="email-chrome">
+            <span class="chrome-dot"></span>
+            <span class="chrome-dot"></span>
+            <span class="chrome-dot"></span>
+            <span class="chrome-title">Inbox</span>
+          </div>
+          <div class="email-fields">
+            <div class="email-field">
+              <span class="email-label">From</span>
+              <span class="email-value">Scribe</span>
+            </div>
+            <div class="email-field">
+              <span class="email-label">Subject</span>
+              <span class="email-value">Highlights — The Future of Small Language Models</span>
+            </div>
+          </div>
+          <div class="email-body">
+            <h4 class="email-section-title">Summary</h4>
+            <ul>
+              <li>Smaller, specialized models are outperforming large general-purpose ones on domain-specific tasks by significant margins</li>
+              <li>The cost of running inference locally has dropped 10x in the past year, making on-device AI practical for consumer hardware</li>
+              <li>Privacy-first architectures are becoming a competitive advantage rather than a constraint</li>
+            </ul>
+            <p class="truncated">...</p>
 
-• Large language models are becoming commoditized, with open-source alternatives approaching proprietary performance levels
+            <h4 class="email-section-title">Creator's Notes</h4>
+            <p>This week we sit down with Dr. Sarah Chen, who leads the efficient ML research group at Stanford. She shares her lab's latest findings on model distillation and why she thinks the "bigger is better" era is ending.</p>
+            <p class="truncated">...</p>
 
-• The real competitive advantage is shifting to data quality and domain-specific fine-tuning
+            <h4 class="email-section-title">Transcript</h4>
+            <p>Welcome back to the show everybody. Today we have a really special guest, someone whose work I've been following for years now. Dr. Sarah Chen, welcome to the podcast.</p>
+            <p class="truncated">...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-• Multimodal capabilities (text, image, audio) will be table stakes within 2 years
-
-• Enterprise adoption is accelerating but governance frameworks are lagging behind
-
-• The hosts predict consolidation in the AI tooling space by end of 2026</pre>
-  </div>
-
-  <div class="cta">
-    <p>Interested? Reach out for access to the service email address.</p>
-  </div>
+  <!-- CTA -->
+  <section class="band">
+    <div class="band-content cta">
+      <p>Interested? Reach out for access to the service email address.</p>
+    </div>
+  </section>
 </body>
 </html>
