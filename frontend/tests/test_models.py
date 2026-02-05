@@ -148,3 +148,24 @@ def test_transcription_to_dict_includes_tags(test_db):
         result = transcription.to_dict()
         assert "tags" in result
         assert result["tags"] == ["work", "review"]
+
+
+def test_transcription_source_context_field(test_db):
+    """Test that source_context field can store show notes."""
+    from sqlalchemy.orm import sessionmaker
+    Session = sessionmaker(bind=test_db)
+    session = Session()
+
+    transcription = Transcription(
+        id="test_context_123",
+        source_type="apple_podcasts",
+        source_url="https://podcasts.apple.com/test",
+        status="pending",
+        source_context="Episode about Python programming. Topics: decorators, generators."
+    )
+    session.add(transcription)
+    session.commit()
+
+    loaded = session.query(Transcription).filter_by(id="test_context_123").first()
+    assert loaded.source_context == "Episode about Python programming. Topics: decorators, generators."
+    session.close()

@@ -55,6 +55,9 @@ class Transcription(Base):
     # Search
     full_text = Column(Text)
 
+    # Creator-provided context (show notes, description, etc.)
+    source_context = Column(Text)
+
     # Tags
     tags = Column(Text, nullable=False, default='[]')
 
