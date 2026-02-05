@@ -35,6 +35,7 @@ def format_success_email(
     duration_seconds: int,
     summary: str,
     transcript: str,
+    creator_notes: str = None,
 ) -> Tuple[str, str, str]:
     """
     Format a success email with summary and transcript.
@@ -45,6 +46,7 @@ def format_success_email(
         duration_seconds: Duration in seconds
         summary: Generated summary (HTML from LLM)
         transcript: Full transcript text
+        creator_notes: Optional creator's notes/description from source
 
     Returns:
         Tuple of (subject, html_body, text_body)
@@ -61,6 +63,17 @@ def format_success_email(
     escaped_transcript = html.escape(transcript)
     # Convert newlines to <br> for HTML display
     html_transcript = escaped_transcript.replace("\n", "<br>\n")
+
+    # Build Creator's Notes section if provided
+    if creator_notes:
+        escaped_notes = html.escape(creator_notes)
+        html_notes = escaped_notes.replace("\n", "<br>\n")
+        creator_notes_html = f"""
+    <div class="section-title">Creator's Notes</div>
+    <div class="creator-notes">{html_notes}</div>
+"""
+    else:
+        creator_notes_html = ""
 
     # HTML version
     html_body = f"""<!DOCTYPE html>
@@ -87,7 +100,7 @@ def format_success_email(
 
     <div class="section-title">Summary</div>
     {summary}
-
+{creator_notes_html}
     <div class="section-title">Transcript</div>
     <div class="transcript">{html_transcript}</div>
 </body>
@@ -96,6 +109,16 @@ def format_success_email(
     # Plain text version
     plain_summary = _html_to_plain_text(summary)
 
+    # Build Creator's Notes section for plain text if provided
+    if creator_notes:
+        creator_notes_text = f"""
+--- CREATOR'S NOTES ---
+
+{creator_notes}
+"""
+    else:
+        creator_notes_text = ""
+
     text_body = f"""Source: {url}
 Duration: {duration}
 Transcribed: {timestamp}
@@ -103,7 +126,7 @@ Transcribed: {timestamp}
 --- SUMMARY ---
 
 {plain_summary}
-
+{creator_notes_text}
 --- TRANSCRIPT ---
 
 {transcript}

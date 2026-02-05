@@ -23,6 +23,7 @@ class JobResult:
     transcript: Optional[str] = None
     duration_seconds: Optional[int] = None
     error: Optional[str] = None
+    creator_notes: Optional[str] = None
 
 
 class JobProcessor:
@@ -59,6 +60,7 @@ class JobProcessor:
             summary=summary,
             transcript=transcript,
             duration_seconds=result.duration_seconds,
+            creator_notes=result.source_context,
         )
 
     async def process_url(self, url: str, tag: str | None = None) -> JobResult:
@@ -116,6 +118,7 @@ class JobProcessor:
                 summary=summary,
                 transcript=transcript,
                 duration_seconds=result.duration_seconds,
+                creator_notes=result.source_context,
             )
 
         except httpx.HTTPStatusError as e:

@@ -219,6 +219,7 @@ class EmailerService:
                 duration_seconds=result.duration_seconds or 0,
                 summary=result.summary or "",
                 transcript=result.transcript or "",
+                creator_notes=result.creator_notes,
             )
             # Use tag's destination_emails if set, otherwise reply to sender
             destination_emails = tag_config.get("destination_emails", []) if tag_config else []
