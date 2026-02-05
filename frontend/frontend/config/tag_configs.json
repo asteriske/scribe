@@ -12,6 +12,12 @@
       "api_key_ref": null,
       "system_prompt": "This video contains the steps for cooking a dish. As best you can capture the ingredients and steps of the recipe, including tools and techniques used. Create a succinct but complete recipe document. Begin the document with a bullet pointed list of all the ingredients mentioned and their amounts, as in a recipe."
     },
+    "highlights": {
+      "api_endpoint": "http://10.100.2.50:1234/v1",
+      "model": "openai/gpt-oss-20b",
+      "api_key_ref": null,
+      "system_prompt": "Extract the key points from this transcription as a concise bullet-point list. Focus on main ideas, notable facts, and actionable takeaways."
+    },
     "kindle": {
       "api_endpoint": "http://10.100.2.50:1234/v1",
       "model": "openai/gpt-oss-20b",
