@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:8000"
 
     # Tagging
-    default_tag: str = "email"
+    default_tag: str = "highlights"
 
 
 def get_settings() -> Settings:
