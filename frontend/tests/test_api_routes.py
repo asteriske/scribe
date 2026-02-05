@@ -420,3 +420,42 @@ def test_transcribe_non_apple_url_no_scraper(client, db_session, monkeypatch):
 
     assert response.status_code == 202
     mock_scraper.fetch_show_notes.assert_not_called()
+
+
+def test_get_transcription_includes_source_context(client, db_session):
+    """Test that GET transcription includes source_context in response."""
+    from frontend.core.models import Transcription
+
+    transcription = Transcription(
+        id="test_get_context",
+        source_type="apple_podcasts",
+        source_url="https://podcasts.apple.com/test",
+        status="completed",
+        source_context="Episode show notes here"
+    )
+    db_session.add(transcription)
+    db_session.commit()
+
+    response = client.get("/api/transcriptions/test_get_context")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["source_context"] == "Episode show notes here"
+
+
+def test_get_transcription_source_context_null_when_missing(client, db_session):
+    """Test that source_context is null when not present."""
+    from frontend.core.models import Transcription
+
+    transcription = Transcription(
+        id="test_no_get_context",
+        source_type="youtube",
+        source_url="https://youtube.com/watch?v=test",
+        status="completed"
+    )
+    db_session.add(transcription)
+    db_session.commit()
+
+    response = client.get("/api/transcriptions/test_no_get_context")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["source_context"] is None

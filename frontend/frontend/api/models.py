@@ -26,6 +26,7 @@ class TranscriptionResponse(BaseModel):
     error: Optional[str] = None
     model: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
+    source_context: Optional[str] = None
 
 
 class UpdateTagsRequest(BaseModel):

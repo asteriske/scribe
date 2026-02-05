@@ -102,7 +102,8 @@ class Transcription(Base):
             'word_count': self.word_count,
             'segments_count': self.segments_count,
             'error': self.error_message,
-            'tags': tags_list
+            'tags': tags_list,
+            'source_context': self.source_context
         }
 
 
