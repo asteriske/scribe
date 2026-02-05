@@ -69,7 +69,7 @@ def test_config_defaults(monkeypatch):
     assert settings.imap_folder_error == "ScribeError"
     assert settings.poll_interval_seconds == 30
     assert settings.max_concurrent_jobs == 3
-    assert settings.default_tag == "email"
+    assert settings.default_tag == "highlights"
 
 
 def test_default_tag_config(monkeypatch):
