@@ -288,6 +288,23 @@
       color: var(--muted);
       font-style: italic;
     }
+    .highlight-keyword {
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      color: var(--accent);
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+    .workflow-callout {
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 0.75rem;
+      border-radius: 0 6px 6px 0;
+      margin-top: 0.75rem;
+      line-height: 1.4;
+    }
 
     /* ── CTA ────────────────────────────────────────────── */
     .cta {
@@ -405,25 +422,30 @@
       <h2 class="section-title">See it in action</h2>
       <div class="workflow">
         <!-- You send -->
-        <div class="email-mockup">
-          <div class="email-chrome">
-            <span class="chrome-dot"></span>
-            <span class="chrome-dot"></span>
-            <span class="chrome-dot"></span>
-            <span class="chrome-title">New Message</span>
-          </div>
-          <div class="email-fields">
-            <div class="email-field">
-              <span class="email-label">To</span>
-              <span class="email-value">scribe@example.com</span>
+        <div class="workflow-send">
+          <div class="email-mockup">
+            <div class="email-chrome">
+              <span class="chrome-dot"></span>
+              <span class="chrome-dot"></span>
+              <span class="chrome-dot"></span>
+              <span class="chrome-title">New Message</span>
             </div>
-            <div class="email-field">
-              <span class="email-label">Subject</span>
-              <span class="email-value">check this out</span>
+            <div class="email-fields">
+              <div class="email-field">
+                <span class="email-label">To</span>
+                <span class="email-value">scribe@example.com</span>
+              </div>
+              <div class="email-field">
+                <span class="email-label">Subject</span>
+                <span class="email-value"><span class="highlight-keyword">highlights</span> — worth a listen</span>
+              </div>
+            </div>
+            <div class="email-body">
+              <p>https://www.youtube.com/watch?v=abc123</p>
             </div>
           </div>
-          <div class="email-body">
-            <p>https://www.youtube.com/watch?v=abc123</p>
+          <div class="workflow-callout">
+            <span class="highlight-keyword">highlights</span> in the subject line tells Scribe which mode to use
           </div>
         </div>
 
