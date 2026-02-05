@@ -186,6 +186,21 @@ class SummarizerService:
         if not full_text:
             return SummaryResult(False, None, "Transcription has no text content")
 
+        # Inject source context if available
+        user_content = full_text
+        if transcription.source_context:
+            context_prefix = f"""The creator provided the following show notes for this episode:
+
+---
+{transcription.source_context}
+---
+
+If any of this context is relevant to the summarization task below, use it to guide what you extract. Ignore any show notes content that isn't relevant to the specific request.
+
+Transcript:
+"""
+            user_content = context_prefix + full_text
+
         # Call LLM API
         start_time = time.time()
         summary_text, usage, error = self._call_llm_api(
@@ -193,7 +208,7 @@ class SummarizerService:
             final_model,
             final_key,
             final_prompt,
-            full_text
+            user_content
         )
         generation_time_ms = int((time.time() - start_time) * 1000)
 
