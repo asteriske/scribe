@@ -64,12 +64,12 @@ def format_success_email(
     # Convert newlines to <br> for HTML display
     html_transcript = escaped_transcript.replace("\n", "<br>\n")
 
-    # Build Creator's Notes section if provided
+    # Build Show Notes section if provided
     if creator_notes:
         escaped_notes = html.escape(creator_notes)
         html_notes = escaped_notes.replace("\n", "<br>\n")
         creator_notes_html = f"""
-    <div class="section-title">Creator's Notes</div>
+    <div class="section-title">Show Notes</div>
     <div class="creator-notes">{html_notes}</div>
 """
     else:
@@ -109,10 +109,10 @@ def format_success_email(
     # Plain text version
     plain_summary = _html_to_plain_text(summary)
 
-    # Build Creator's Notes section for plain text if provided
+    # Build Show Notes section for plain text if provided
     if creator_notes:
         creator_notes_text = f"""
---- CREATOR'S NOTES ---
+--- SHOW NOTES ---
 
 {creator_notes}
 """
