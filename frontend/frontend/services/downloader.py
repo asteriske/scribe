@@ -267,7 +267,7 @@ class Downloader:
             'duration_seconds': info.get('duration'),
             'upload_date': info.get('upload_date'),
             'thumbnail_url': info.get('thumbnail'),
-            'description': info.get('description', '')[:500] if info.get('description') else None,
+            'description': info.get('description'),
             'format': info.get('format'),
         }
 

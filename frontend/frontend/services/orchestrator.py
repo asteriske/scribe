@@ -224,6 +224,10 @@ class Orchestrator:
                 transcription.upload_date = metadata.get('upload_date')
                 transcription.audio_format = metadata.get('format')
 
+                # Set source_context from description if not already populated (e.g., by Apple Podcasts scraper)
+                if not transcription.source_context and metadata.get('description'):
+                    transcription.source_context = metadata['description']
+
                 # Set audio cache expiration
                 transcription.audio_cached_until = datetime.now(timezone.utc) + timedelta(days=settings.audio_cache_days)
 
