@@ -33,6 +33,7 @@ from frontend.core.models import Transcription, Summary
 from frontend.services.orchestrator import Orchestrator
 from frontend.services.summarizer import SummarizerService
 from frontend.services.config_manager import ConfigManager
+from frontend.services.apple_podcasts_scraper import ApplePodcastsScraper
 from frontend.utils.url_parser import parse_url
 from frontend.utils.tag_validator import normalize_tags
 
@@ -124,6 +125,17 @@ async def transcribe_url(
         # Normalize tags
         normalized_tags = normalize_tags(request.tags) if request.tags else []
 
+        # Fetch show notes for Apple Podcasts URLs
+        source_context = None
+        scraper = ApplePodcastsScraper()
+        if scraper.is_apple_podcasts_url(request.url):
+            logger.info(f"Fetching show notes for Apple Podcasts URL: {request.url}")
+            source_context = scraper.fetch_show_notes(request.url)
+            if source_context:
+                logger.info(f"Successfully fetched show notes ({len(source_context)} chars)")
+            else:
+                logger.info("No show notes found or fetch failed, continuing without context")
+
         # Create pending record
         transcription = Transcription(
             id=url_info.id,
@@ -131,7 +143,8 @@ async def transcribe_url(
             source_url=request.url,
             status='pending',
             progress=0,
-            tags=json.dumps(normalized_tags)
+            tags=json.dumps(normalized_tags),
+            source_context=source_context
         )
         db.add(transcription)
         db.commit()

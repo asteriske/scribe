@@ -55,6 +55,9 @@ class Transcription(Base):
     # Search
     full_text = Column(Text)
 
+    # Creator-provided context (show notes, description, etc.)
+    source_context = Column(Text)
+
     # Tags
     tags = Column(Text, nullable=False, default='[]')
 
@@ -99,7 +102,8 @@ class Transcription(Base):
             'word_count': self.word_count,
             'segments_count': self.segments_count,
             'error': self.error_message,
-            'tags': tags_list
+            'tags': tags_list,
+            'source_context': self.source_context
         }
 
 

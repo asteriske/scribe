@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, NamedTuple
 
 from frontend.core.config import settings
+from frontend.services.apple_podcasts_scraper import ApplePodcastsScraper
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,90 @@ class Downloader:
             )
 
         except Exception as e:
-            error = f"Download failed: {str(e)}"
+            error_str = str(e)
+
+            # Check if this is an Apple Podcasts URL and yt-dlp failed
+            if self._is_apple_podcasts_url(url) and "Unable to extract" in error_str:
+                logger.warning(f"yt-dlp Apple Podcasts extractor failed, trying fallback: {error_str}")
+                return self._download_apple_podcasts_fallback(url, transcription_id)
+
+            error = f"Download failed: {error_str}"
+            logger.error(error, exc_info=True)
+            return DownloadResult(
+                success=False, audio_path=None, metadata=None, error=error
+            )
+
+    def _is_apple_podcasts_url(self, url: str) -> bool:
+        """Check if URL is an Apple Podcasts URL."""
+        return "podcasts.apple.com" in url.lower()
+
+    def _download_apple_podcasts_fallback(self, url: str, transcription_id: str) -> DownloadResult:
+        """Fallback download for Apple Podcasts when yt-dlp extractor fails.
+
+        Scrapes the page to find the direct audio URL and downloads via yt-dlp generic extractor.
+
+        Args:
+            url: Apple Podcasts episode URL
+            transcription_id: Unique transcription ID
+
+        Returns:
+            DownloadResult with success status, audio path, metadata, or error
+        """
+        try:
+            import yt_dlp
+        except ImportError:
+            return DownloadResult(
+                success=False, audio_path=None, metadata=None,
+                error="yt-dlp not installed"
+            )
+
+        try:
+            # Use our scraper to extract the audio URL
+            scraper = ApplePodcastsScraper()
+            audio_url = scraper.extract_audio_url(url)
+
+            if not audio_url:
+                error = "Could not extract audio URL from Apple Podcasts page"
+                logger.error(error)
+                return DownloadResult(
+                    success=False, audio_path=None, metadata=None, error=error
+                )
+
+            logger.info(f"Found direct audio URL, downloading: {audio_url[:100]}...")
+
+            # Download using the direct URL
+            ydl_opts = self._build_yt_dlp_options(transcription_id)
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(audio_url, download=True)
+
+            # Find the downloaded file
+            audio_path = self._find_audio_file(transcription_id)
+            if not audio_path:
+                error = f"Downloaded audio file not found for {transcription_id}"
+                logger.error(error)
+                return DownloadResult(
+                    success=False, audio_path=None, metadata=None, error=error
+                )
+
+            # Verify file size
+            file_size_mb = audio_path.stat().st_size / (1024 * 1024)
+            if file_size_mb > settings.max_audio_size_mb:
+                error = f"File size ({file_size_mb:.1f} MB) exceeds maximum"
+                audio_path.unlink()
+                return DownloadResult(
+                    success=False, audio_path=None, metadata=None, error=error
+                )
+
+            metadata = self._extract_metadata(info)
+            logger.info(f"Successfully downloaded via fallback to {audio_path} ({file_size_mb:.1f} MB)")
+
+            return DownloadResult(
+                success=True, audio_path=audio_path, metadata=metadata, error=None
+            )
+
+        except Exception as e:
+            error = f"Fallback download failed: {str(e)}"
             logger.error(error, exc_info=True)
             return DownloadResult(
                 success=False, audio_path=None, metadata=None, error=error

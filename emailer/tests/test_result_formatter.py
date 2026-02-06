@@ -156,3 +156,40 @@ class TestFormatNoUrlsEmail:
         assert "did not contain any transcribable URLs" in body
         assert "YouTube" in body
         assert "Apple Podcasts" in body
+
+
+class TestCreatorNotes:
+    """Tests for Show Notes section in success emails."""
+
+    def test_format_success_email_with_creator_notes(self):
+        """Test email formatting includes Show Notes section when provided."""
+        subject, html_body, text_body = format_success_email(
+            url="https://podcasts.apple.com/test",
+            title="Test Episode",
+            duration_seconds=3600,
+            summary="<p>This is the summary.</p>",
+            transcript="Full transcript text here.",
+            creator_notes="Episode about Python. Topics: decorators, generators."
+        )
+        assert "Show Notes" in html_body
+        assert "Episode about Python" in html_body
+        assert "SHOW NOTES" in text_body
+        assert "Episode about Python" in text_body
+        # Verify order: Summary -> Show Notes -> Transcript
+        summary_pos = html_body.find("Summary")
+        notes_pos = html_body.find("Show Notes")
+        transcript_pos = html_body.find("Transcript")
+        assert summary_pos < notes_pos < transcript_pos
+
+    def test_format_success_email_without_creator_notes(self):
+        """Test email formatting omits Show Notes section when not provided."""
+        subject, html_body, text_body = format_success_email(
+            url="https://youtube.com/watch?v=test",
+            title="Test Video",
+            duration_seconds=600,
+            summary="<p>Summary here.</p>",
+            transcript="Transcript here.",
+            creator_notes=None
+        )
+        assert "Show Notes" not in html_body
+        assert "SHOW NOTES" not in text_body

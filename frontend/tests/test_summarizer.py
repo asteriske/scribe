@@ -92,3 +92,81 @@ def test_generate_summary_appends_suffix(mock_db, mock_transcription):
         assert "Format using HTML elements." in system_prompt_used
         # Verify the suffix comes after the base prompt
         assert system_prompt_used.index("You are a helpful assistant.") < system_prompt_used.index("Format using HTML elements.")
+
+
+def test_generate_summary_includes_source_context(mock_db):
+    """Test that source_context is included in the prompt when available."""
+    transcription = Transcription(
+        id="test_context_sum",
+        source_type="apple_podcasts",
+        source_url="https://podcasts.apple.com/test",
+        status="completed",
+        tags=json.dumps([]),
+        source_context="Episode about machine learning. Topics: neural networks, transformers."
+    )
+    mock_db.add(transcription)
+    mock_db.commit()
+
+    with patch.object(SummarizerService, '_call_llm_api') as mock_llm:
+        mock_llm.return_value = ("Summary text", {"prompt_tokens": 100}, None)
+
+        mock_storage = MagicMock()
+        mock_storage.load_transcription.return_value = {
+            'transcription': {'segments': [{'text': 'Hello world.'}]}
+        }
+
+        mock_config = MagicMock()
+        mock_resolved = MagicMock()
+        mock_resolved.api_endpoint = "http://test.com/v1"
+        mock_resolved.model = "test-model"
+        mock_resolved.api_key = "test-key"
+        mock_resolved.system_prompt = "Summarize this."
+        mock_resolved.config_source = "default"
+        mock_config.resolve_config_for_transcription.return_value = mock_resolved
+
+        service = SummarizerService(config_manager=mock_config, storage_manager=mock_storage)
+        result = service.generate_summary(db=mock_db, transcription_id="test_context_sum")
+
+        call_args = mock_llm.call_args
+        user_content = call_args[0][4]  # 5th positional arg
+        assert "machine learning" in user_content
+        assert "neural networks" in user_content
+
+
+def test_generate_summary_without_source_context(mock_db):
+    """Test that summarization works without source_context."""
+    transcription = Transcription(
+        id="test_no_context",
+        source_type="youtube",
+        source_url="https://youtube.com/watch?v=test",
+        status="completed",
+        tags=json.dumps([]),
+        source_context=None
+    )
+    mock_db.add(transcription)
+    mock_db.commit()
+
+    with patch.object(SummarizerService, '_call_llm_api') as mock_llm:
+        mock_llm.return_value = ("Summary text", {"prompt_tokens": 100}, None)
+
+        mock_storage = MagicMock()
+        mock_storage.load_transcription.return_value = {
+            'transcription': {'segments': [{'text': 'Hello world.'}]}
+        }
+
+        mock_config = MagicMock()
+        mock_resolved = MagicMock()
+        mock_resolved.api_endpoint = "http://test.com/v1"
+        mock_resolved.model = "test-model"
+        mock_resolved.api_key = "test-key"
+        mock_resolved.system_prompt = "Summarize this."
+        mock_resolved.config_source = "default"
+        mock_config.resolve_config_for_transcription.return_value = mock_resolved
+
+        service = SummarizerService(config_manager=mock_config, storage_manager=mock_storage)
+        result = service.generate_summary(db=mock_db, transcription_id="test_no_context")
+
+        assert result.success
+        call_args = mock_llm.call_args
+        user_content = call_args[0][4]
+        assert "creator provided" not in user_content.lower()

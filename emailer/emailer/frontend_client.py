@@ -22,6 +22,7 @@ class TranscriptionResult:
     full_text: Optional[str] = None
     duration_seconds: Optional[int] = None
     error: Optional[str] = None
+    source_context: Optional[str] = None
 
 
 class FrontendClient:
@@ -134,6 +135,9 @@ class FrontendClient:
             # Extract source info if available
             if "source" in data:
                 result.title = data["source"].get("title")
+
+            # Extract source_context if available
+            result.source_context = data.get("source_context")
 
             # Extract transcription data if completed
             if "transcription" in data and data["transcription"]:

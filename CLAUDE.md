@@ -11,3 +11,13 @@ For all git forge operations (issues, pull requests, commits, branches), use the
 - Creating, reviewing, and merging pull requests
 - Examining remote commits and branches
 - Any interaction with the remote repository beyond basic git commands
+
+## Development Environment
+
+Each service (frontend, transcriber, emailer) has its own virtual environment. Always use a venv when running services:
+
+```bash
+cd <service>
+source venv/bin/activate
+./scripts/start.sh
+```
