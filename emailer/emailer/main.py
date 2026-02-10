@@ -1,6 +1,7 @@
 """Main entry point for the emailer service."""
 
 import asyncio
+import html as html_mod
 import logging
 import signal
 from typing import Optional
@@ -152,41 +153,54 @@ class EmailerService:
 
         result = await self.episode_source_processor.process_email(email)
 
-        if result.success:
-            subject, html_body, text_body = format_success_email(
-                url=result.url,
-                title=result.title or "Untitled",
-                duration_seconds=result.duration_seconds or 0,
-                summary=result.summary or "",
-                transcript=result.transcript or "",
-                creator_notes=result.creator_notes,
-            )
-            # Override subject to include original email subject
-            subject = f"Scribe: {email.subject}" if email.subject else subject
-            # Prepend matched URL verification line
-            verification = f"Matched URL: {result.url}\n\n"
-            text_body = verification + text_body
+        try:
+            if result.success:
+                subject, html_body, text_body = format_success_email(
+                    url=result.url,
+                    title=result.title or "Untitled",
+                    duration_seconds=result.duration_seconds or 0,
+                    summary=result.summary or "",
+                    transcript=result.transcript or "",
+                    creator_notes=result.creator_notes,
+                )
+                # Override subject to include original email subject
+                subject = f"Scribe: {email.subject}" if email.subject else subject
+                # Prepend episode source context to both text and HTML bodies
+                verification = f"Matched URL: {result.url}\n"
+                if email.subject:
+                    verification = f"Original subject: {email.subject}\n" + verification
+                text_body = verification + "\n" + text_body
 
-            await self.smtp.send_email(
-                from_addr=self.settings.from_email_address,
-                to_addr=self.settings.episode_sources_return_address,
-                subject=subject,
-                body=text_body,
-                html_body=html_body,
-            )
+                context_html = f'<div style="background:#f0f7ff;border:1px solid #cce0ff;padding:12px 16px;margin-bottom:24px;border-radius:4px;font-size:14px;">'
+                if email.subject:
+                    context_html += f'<div><strong>Original subject:</strong> {html_mod.escape(email.subject)}</div>'
+                context_html += f'<div><strong>Matched URL:</strong> <a href="{html_mod.escape(result.url)}">{html_mod.escape(result.url)}</a></div>'
+                context_html += '</div>'
+                html_body = html_body.replace('<body>', f'<body>\n    {context_html}', 1)
 
-            target_folder = self.settings.imap_folder_episode_sources_done
-        else:
-            error_subject, error_body = format_error_email(
-                url=result.url or "(no URL found)",
-                error_message=result.error or "Unknown error",
-            )
-            await self.smtp.send_email(
-                from_addr=self.settings.from_email_address,
-                to_addr=email.sender,
-                subject=error_subject,
-                body=error_body,
-            )
+                await self.smtp.send_email(
+                    from_addr=self.settings.from_email_address,
+                    to_addr=self.settings.episode_sources_return_address,
+                    subject=subject,
+                    body=text_body,
+                    html_body=html_body,
+                )
+
+                target_folder = self.settings.imap_folder_episode_sources_done
+            else:
+                error_subject, error_body = format_error_email(
+                    url=result.url or "(no URL found)",
+                    error_message=result.error or "Unknown error",
+                )
+                await self.smtp.send_email(
+                    from_addr=self.settings.from_email_address,
+                    to_addr=email.sender,
+                    subject=error_subject,
+                    body=error_body,
+                )
+                target_folder = self.settings.imap_folder_episode_sources_error
+        except Exception as e:
+            logger.error(f"Failed to send result email for episode source {email.msg_num}: {e}", exc_info=True)
             target_folder = self.settings.imap_folder_episode_sources_error
 
         try:
