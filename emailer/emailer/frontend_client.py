@@ -208,6 +208,53 @@ class FrontendClient:
             logger.info(f"Generated summary for {transcription_id} ({elapsed:.2f}s)")
             return data["summary_text"]
 
+    async def create_episode_source(
+        self,
+        transcription_id: str,
+        source_text: str,
+        matched_url: str,
+        email_subject: str | None = None,
+        email_from: str | None = None,
+    ) -> str:
+        """
+        Create an episode source record in the frontend DB.
+
+        Args:
+            transcription_id: ID of the linked transcription
+            source_text: Plain text content of the email
+            matched_url: URL that was extracted and processed
+            email_subject: Original email subject
+            email_from: Sender email address
+
+        Returns:
+            Episode source ID
+
+        Raises:
+            httpx.HTTPStatusError: If the request fails
+        """
+        logger.debug(f"POST /api/episode-sources starting for {transcription_id}")
+        start = time.monotonic()
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            payload = {
+                "transcription_id": transcription_id,
+                "source_text": source_text,
+                "matched_url": matched_url,
+            }
+            if email_subject is not None:
+                payload["email_subject"] = email_subject
+            if email_from is not None:
+                payload["email_from"] = email_from
+
+            response = await client.post(
+                f"{self.base_url}/api/episode-sources",
+                json=payload,
+            )
+            elapsed = time.monotonic() - start
+            response.raise_for_status()
+            data = response.json()
+            logger.info(f"Created episode source {data['id']} for {transcription_id} ({elapsed:.2f}s)")
+            return data["id"]
+
     async def wait_for_completion(
         self,
         transcription_id: str,
