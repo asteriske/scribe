@@ -6,6 +6,7 @@ import signal
 from typing import Optional
 
 from emailer.config import Settings, get_settings
+from emailer.episode_source_processor import EpisodeSourceProcessor
 from emailer.frontend_client import FrontendClient
 from emailer.imap_client import ImapClient, EmailMessage
 from emailer.job_processor import JobProcessor, JobResult
@@ -52,6 +53,7 @@ class EmailerService:
 
         frontend = FrontendClient(base_url=settings.frontend_url)
         self.processor = JobProcessor(frontend_client=frontend)
+        self.episode_source_processor = EpisodeSourceProcessor(frontend_client=frontend)
 
     async def start(self) -> None:
         """Start the emailer service."""
@@ -67,7 +69,8 @@ class EmailerService:
         await self.imap.connect()
 
         logger.info(
-            f"Monitoring folder: {self.settings.imap_folder_inbox} "
+            f"Monitoring folders: {self.settings.imap_folder_inbox}, "
+            f"{self.settings.imap_folder_episode_sources} "
             f"(poll interval: {self.settings.poll_interval_seconds}s)"
         )
 
@@ -98,25 +101,35 @@ class EmailerService:
     async def _poll_and_process(self) -> None:
         """Poll for new emails and process them."""
         try:
+            # Check main inbox
             emails = await self.imap.fetch_unseen(self.settings.imap_folder_inbox)
-
             if emails:
-                logger.info(f"Found {len(emails)} new email(s)")
+                logger.info(f"Found {len(emails)} new email(s) in {self.settings.imap_folder_inbox}")
 
             tasks = []
             for email in emails:
-                # Mark as seen immediately
                 await self.imap.mark_seen(email.msg_num)
-                # Process concurrently with semaphore
                 task = asyncio.create_task(self._process_email_with_semaphore(email))
                 tasks.append(task)
+
+            # Check episode sources inbox
+            try:
+                es_emails = await self.imap.fetch_unseen(self.settings.imap_folder_episode_sources)
+                if es_emails:
+                    logger.info(f"Found {len(es_emails)} new email(s) in {self.settings.imap_folder_episode_sources}")
+
+                for email in es_emails:
+                    await self.imap.mark_seen(email.msg_num)
+                    task = asyncio.create_task(self._process_episode_source_with_semaphore(email))
+                    tasks.append(task)
+            except Exception as e:
+                logger.error(f"Error checking episode sources folder: {e}")
 
             if tasks:
                 await asyncio.gather(*tasks, return_exceptions=True)
 
         except Exception as e:
             logger.error(f"Error during poll: {e}")
-            # Reconnect on connection errors (EOF, broken pipe, etc.)
             if self.imap.is_connection_error(e):
                 try:
                     await self.imap.reconnect()
@@ -127,6 +140,61 @@ class EmailerService:
         """Process email with concurrency limit."""
         async with self.semaphore:
             await self._process_email(email)
+
+    async def _process_episode_source_with_semaphore(self, email: EmailMessage) -> None:
+        """Process episode source email with concurrency limit."""
+        async with self.semaphore:
+            await self._process_episode_source_email(email)
+
+    async def _process_episode_source_email(self, email: EmailMessage) -> None:
+        """Process a single episode source email."""
+        logger.info(f"Processing episode source email {email.msg_num} from {email.sender}")
+
+        result = await self.episode_source_processor.process_email(email)
+
+        if result.success:
+            subject, html_body, text_body = format_success_email(
+                url=result.url,
+                title=result.title or "Untitled",
+                duration_seconds=result.duration_seconds or 0,
+                summary=result.summary or "",
+                transcript=result.transcript or "",
+                creator_notes=result.creator_notes,
+            )
+            # Override subject to include original email subject
+            subject = f"Scribe: {email.subject}" if email.subject else subject
+            # Prepend matched URL verification line
+            verification = f"Matched URL: {result.url}\n\n"
+            text_body = verification + text_body
+
+            await self.smtp.send_email(
+                from_addr=self.settings.from_email_address,
+                to_addr=self.settings.episode_sources_return_address,
+                subject=subject,
+                body=text_body,
+                html_body=html_body,
+            )
+
+            target_folder = self.settings.imap_folder_episode_sources_done
+        else:
+            error_subject, error_body = format_error_email(
+                url=result.url or "(no URL found)",
+                error_message=result.error or "Unknown error",
+            )
+            await self.smtp.send_email(
+                from_addr=self.settings.from_email_address,
+                to_addr=email.sender,
+                subject=error_subject,
+                body=error_body,
+            )
+            target_folder = self.settings.imap_folder_episode_sources_error
+
+        try:
+            await self.imap.move_to_folder(email.msg_num, target_folder)
+        except Exception as e:
+            logger.error(
+                f"Failed to move email {email.msg_num} to {target_folder}: {e}"
+            )
 
     async def _process_email(self, email: EmailMessage) -> None:
         """Process a single email."""
