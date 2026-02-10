@@ -22,14 +22,16 @@
       "api_endpoint": "http://10.100.2.50:1234/v1",
       "model": "openai/gpt-oss-20b",
       "api_key_ref": null,
-      "system_prompt": "Summarize the following podcast subscription. Pay special attention to main topics, questions asked and hot takes or counter-intuitive opinions.",
-      "destination_emails": ["kindle@patrickmccarthy.cc"]
+      "system_prompt": "Summarize the following podcast subscription. Pay special attention to main topics, questions asked and hot takes or counter-intuitive opinions.\n\nIMPORTANT: format for a screen 70 chars wide. Line wraps are ok, but no markdown tables, prefer bullet points and nested lists. When creating bullet points and nested lists be sure to use html formatting!",
+      "destination_emails": [
+        "eCSgB1wFv@inbox.sendtoreader.com"
+      ]
     },
     "digest": {
       "api_endpoint": "http://10.100.2.50:1234/v1",
       "model": "openai/gpt-oss-20b",
       "api_key_ref": null,
-      "system_prompt": "Summarize the following podcast subscription. Pay special attention to main topics, questions asked and hot takes or counter-intuitive opinions."
+      "system_prompt": "Summarize the following podcast subscription. Pay special attention to main topics, questions asked and hot takes or counter-intuitive opinions.\n\nIMPORTANT: format for a screen 70 chars wide. Line wraps are ok, but no markdown tables, prefer bullet points and nested lists. When creating bullet points and nested lists be sure to use html formatting!"
     }
   }
 }

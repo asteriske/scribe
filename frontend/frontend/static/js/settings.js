@@ -227,12 +227,15 @@ function openTagConfigModal(mode, tagName = null) {
     } else {
         tagConfigModalTitle.textContent = 'Edit Tag Configuration';
         const config = tagConfigs[tagName];
+        console.log('DEBUG opening edit modal for tag:', tagName);
+        console.log('DEBUG config.destination_emails:', JSON.stringify(config.destination_emails));
         tagNameInput.value = tagName;
         tagApiEndpointInput.value = config.api_endpoint;
         tagModelInput.value = config.model;
         tagApiKeyRefSelect.value = config.api_key_ref || '';
         tagSystemPromptInput.value = config.system_prompt;
         tagDestinationEmailsInput.value = (config.destination_emails || []).join(', ');
+        console.log('DEBUG set input value to:', JSON.stringify(tagDestinationEmailsInput.value));
         tagNameInput.disabled = true;
     }
 
@@ -249,9 +252,12 @@ async function handleTagConfigSubmit(e) {
     const mode = tagConfigMode.value;
     const tagName = tagNameInput.value.trim();
     const destinationEmailsRaw = tagDestinationEmailsInput.value.trim();
+    console.log('DEBUG destination emails input element:', tagDestinationEmailsInput);
+    console.log('DEBUG destination emails raw value:', JSON.stringify(destinationEmailsRaw));
     const destinationEmails = destinationEmailsRaw
         ? destinationEmailsRaw.split(',').map(e => e.trim()).filter(e => e)
         : [];
+    console.log('DEBUG destination emails parsed:', JSON.stringify(destinationEmails));
     const requestBody = {
         tag_name: tagName,
         api_endpoint: tagApiEndpointInput.value.trim(),
@@ -260,6 +266,7 @@ async function handleTagConfigSubmit(e) {
         system_prompt: tagSystemPromptInput.value.trim(),
         destination_emails: destinationEmails
     };
+    console.log('DEBUG full request body:', JSON.stringify(requestBody, null, 2));
 
     try {
         let response;
