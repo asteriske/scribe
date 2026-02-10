@@ -164,7 +164,9 @@ class EmailerService:
                     creator_notes=result.creator_notes,
                 )
                 # Override subject to include original email subject
-                subject = f"Scribe: {email.subject}" if email.subject else subject
+                # Sanitize: email subjects from forwarded messages may contain CR/LF
+                clean_subject = " ".join(email.subject.split()) if email.subject else None
+                subject = f"Scribe: {clean_subject}" if clean_subject else subject
                 # Prepend episode source context to both text and HTML bodies
                 verification = f"Matched URL: {result.url}\n"
                 if email.subject:
