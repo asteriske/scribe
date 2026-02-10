@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple, Union
 
 import mlx_whisper
 
@@ -69,6 +69,14 @@ class WhisperModel:
                 language=language,
                 task=task,
                 fp16=(settings.compute_type == "float16"),
+                condition_on_previous_text=settings.condition_on_previous_text,
+                compression_ratio_threshold=settings.compression_ratio_threshold,
+                no_speech_threshold=settings.no_speech_threshold,
+                logprob_threshold=settings.logprob_threshold,
+                temperature=self._parse_temperature(settings.temperature),
+                hallucination_silence_threshold=settings.hallucination_silence_threshold,
+                word_timestamps=settings.hallucination_silence_threshold is not None,
+                initial_prompt=settings.initial_prompt,
             )
 
             # Extract metadata
@@ -89,6 +97,12 @@ class WhisperModel:
         except Exception as e:
             logger.error(f"Transcription failed: {e}")
             raise
+
+    @staticmethod
+    def _parse_temperature(temp_str: str) -> Union[float, Tuple[float, ...]]:
+        """Parse comma-separated temperature string into a float or tuple."""
+        temps = tuple(float(t) for t in temp_str.split(","))
+        return temps[0] if len(temps) == 1 else temps
 
     def _get_audio_duration(self, result: Dict) -> float:
         """Extract audio duration from transcription result."""

@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic_settings import BaseSettings
 
@@ -20,6 +20,15 @@ class Settings(BaseSettings):
     whisper_model: Literal["tiny", "base", "small", "medium", "large-v3"] = "medium"
     model_dir: Path = Path.home() / ".cache" / "whisper"
     compute_type: Literal["float16", "float32"] = "float16"
+
+    # Hallucination Mitigation
+    condition_on_previous_text: bool = False
+    compression_ratio_threshold: float = 2.4
+    no_speech_threshold: float = 0.6
+    logprob_threshold: float = -1.0
+    temperature: str = "0.0,0.2,0.4,0.6,0.8,1.0"
+    hallucination_silence_threshold: Optional[float] = 2.0
+    initial_prompt: Optional[str] = None
 
     # Job Queue Configuration
     max_concurrent_jobs: int = 1
