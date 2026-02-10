@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+from emailer.imap_client import EmailMessage
 from emailer.main import EmailerService
 
 
@@ -25,6 +26,10 @@ class TestEmailerService:
         settings.imap_folder_inbox = "ToScribe"
         settings.imap_folder_done = "ScribeDone"
         settings.imap_folder_error = "ScribeError"
+        settings.imap_folder_episode_sources = "EpisodeSources"
+        settings.imap_folder_episode_sources_done = "EpisodeSourcesDone"
+        settings.imap_folder_episode_sources_error = "EpisodeSourcesError"
+        settings.episode_sources_return_address = "newsletters@test.com"
         settings.poll_interval_seconds = 300
         settings.max_concurrent_jobs = 3
         settings.result_email_address = "results@test.com"
@@ -238,6 +243,10 @@ class TestSendResultEmail:
         settings.imap_folder_inbox = "ToScribe"
         settings.imap_folder_done = "ScribeDone"
         settings.imap_folder_error = "ScribeError"
+        settings.imap_folder_episode_sources = "EpisodeSources"
+        settings.imap_folder_episode_sources_done = "EpisodeSourcesDone"
+        settings.imap_folder_episode_sources_error = "EpisodeSourcesError"
+        settings.episode_sources_return_address = "newsletters@test.com"
         settings.poll_interval_seconds = 300
         settings.max_concurrent_jobs = 3
         settings.result_email_address = "default@example.com"
@@ -400,3 +409,134 @@ class TestSendResultEmail:
         # Verify html_body was passed
         assert "html_body" in call_kwargs
         assert "<!DOCTYPE html>" in call_kwargs["html_body"]
+
+
+class TestEpisodeSourceProcessing:
+    """Tests for episode source email processing pipeline."""
+
+    @pytest.fixture
+    def mock_settings(self):
+        """Create mock settings with episode source config."""
+        settings = MagicMock()
+        settings.imap_host = "imap.test.com"
+        settings.imap_port = 993
+        settings.imap_user = "test@test.com"
+        settings.imap_password = "testpass"
+        settings.imap_use_ssl = True
+        settings.smtp_host = "smtp.test.com"
+        settings.smtp_port = 587
+        settings.smtp_user = "test@test.com"
+        settings.smtp_password = "testpass"
+        settings.smtp_use_tls = True
+        settings.imap_folder_inbox = "ToScribe"
+        settings.imap_folder_done = "ScribeDone"
+        settings.imap_folder_error = "ScribeError"
+        settings.imap_folder_episode_sources = "EpisodeSources"
+        settings.imap_folder_episode_sources_done = "EpisodeSourcesDone"
+        settings.imap_folder_episode_sources_error = "EpisodeSourcesError"
+        settings.episode_sources_return_address = "newsletters@test.com"
+        settings.poll_interval_seconds = 300
+        settings.max_concurrent_jobs = 3
+        settings.result_email_address = "results@test.com"
+        settings.from_email_address = "scribe@test.com"
+        settings.frontend_url = "http://localhost:8000"
+        settings.default_tag = "email"
+        return settings
+
+    @pytest.mark.asyncio
+    async def test_process_episode_source_email_success(self, mock_settings):
+        """Test successful episode source email processing."""
+        from emailer.job_processor import JobResult
+
+        service = EmailerService(mock_settings)
+        service.imap = AsyncMock()
+        service.smtp = AsyncMock()
+        service.smtp.send_email = AsyncMock()
+
+        service.episode_source_processor = AsyncMock()
+        service.episode_source_processor.process_email = AsyncMock(
+            return_value=JobResult(
+                url="https://podcasts.apple.com/test",
+                success=True,
+                title="Test Podcast",
+                summary="Summary",
+                transcript="Transcript",
+                duration_seconds=600,
+            )
+        )
+
+        email = EmailMessage(
+            msg_num="1",
+            sender="newsletter@example.com",
+            subject="New Episode: Testing",
+            body_text="Listen at https://podcasts.apple.com/test",
+            body_html=None,
+        )
+
+        await service._process_episode_source_email(email)
+
+        # Should have sent result to configured return address
+        service.smtp.send_email.assert_called()
+        call_kwargs = service.smtp.send_email.call_args.kwargs
+        assert call_kwargs["to_addr"] == "newsletters@test.com"
+        assert "Scribe: New Episode: Testing" in call_kwargs["subject"]
+
+        # Should move to done folder
+        service.imap.move_to_folder.assert_called_with("1", "EpisodeSourcesDone")
+
+    @pytest.mark.asyncio
+    async def test_process_episode_source_email_no_urls(self, mock_settings):
+        """Test episode source email with no matching URLs."""
+        from emailer.job_processor import JobResult
+
+        service = EmailerService(mock_settings)
+        service.imap = AsyncMock()
+        service.smtp = AsyncMock()
+        service.smtp.send_email = AsyncMock()
+
+        service.episode_source_processor = AsyncMock()
+        service.episode_source_processor.process_email = AsyncMock(
+            return_value=JobResult(
+                url="",
+                success=False,
+                error="No Apple Podcasts or YouTube URL found in email",
+            )
+        )
+
+        email = EmailMessage(
+            msg_num="2",
+            sender="user@example.com",
+            subject="Random email",
+            body_text="No relevant URLs here",
+            body_html=None,
+        )
+
+        await service._process_episode_source_email(email)
+
+        # Should notify sender
+        service.smtp.send_email.assert_called()
+        call_kwargs = service.smtp.send_email.call_args.kwargs
+        assert call_kwargs["to_addr"] == "user@example.com"
+
+        # Should move to error folder
+        service.imap.move_to_folder.assert_called_with("2", "EpisodeSourcesError")
+
+    @pytest.mark.asyncio
+    async def test_poll_checks_episode_sources_folder(self, mock_settings):
+        """Test that polling checks both ToScribe and EpisodeSources folders."""
+        import asyncio
+        service = EmailerService(mock_settings)
+        service.imap = AsyncMock()
+        service.smtp = AsyncMock()
+        service.semaphore = asyncio.Semaphore(3)
+
+        # No emails in either folder
+        service.imap.fetch_unseen = AsyncMock(return_value=[])
+
+        await service._poll_and_process()
+
+        # Should have checked both folders
+        calls = service.imap.fetch_unseen.call_args_list
+        folders_checked = [call.args[0] for call in calls]
+        assert "ToScribe" in folders_checked
+        assert "EpisodeSources" in folders_checked

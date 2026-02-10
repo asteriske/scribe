@@ -26,10 +26,12 @@ from frontend.api.models import (
     DefaultConfigResponse,
     AllTagConfigsResponse,
     SecretRequest,
-    SecretListResponse
+    SecretListResponse,
+    EpisodeSourceRequest,
+    EpisodeSourceResponse,
 )
 from frontend.core.database import get_db
-from frontend.core.models import Transcription, Summary
+from frontend.core.models import Transcription, Summary, EpisodeSource
 from frontend.services.orchestrator import Orchestrator
 from frontend.services.summarizer import SummarizerService
 from frontend.services.config_manager import ConfigManager
@@ -646,6 +648,47 @@ async def delete_secret(key_name: str):
         raise HTTPException(status_code=404, detail=f"Secret '{key_name}' not found")
 
     return {"message": f"Secret '{key_name}' deleted successfully"}
+
+
+# =============================================================================
+# Episode Source API Endpoints
+# =============================================================================
+
+@router.post(
+    "/episode-sources",
+    response_model=EpisodeSourceResponse,
+    status_code=201,
+    responses={
+        404: {"model": ErrorResponse, "description": "Transcription not found"},
+    },
+)
+async def create_episode_source(
+    request: EpisodeSourceRequest,
+    db: Session = Depends(get_db),
+):
+    """Create an episode source record linking email content to a transcription."""
+    import uuid
+
+    # Verify transcription exists
+    transcription = db.query(Transcription).filter(
+        Transcription.id == request.transcription_id
+    ).first()
+    if not transcription:
+        raise HTTPException(status_code=404, detail="Transcription not found")
+
+    episode_source = EpisodeSource(
+        id=f"es_{uuid.uuid4().hex[:8]}",
+        transcription_id=request.transcription_id,
+        email_subject=request.email_subject,
+        email_from=request.email_from,
+        source_text=request.source_text,
+        matched_url=request.matched_url,
+    )
+    db.add(episode_source)
+    db.commit()
+    db.refresh(episode_source)
+
+    return EpisodeSourceResponse(**episode_source.to_dict())
 
 
 # =============================================================================

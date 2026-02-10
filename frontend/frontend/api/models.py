@@ -139,3 +139,25 @@ class SecretRequest(BaseModel):
 class SecretListResponse(BaseModel):
     """Response for list of secret names."""
     keys: List[str]
+
+
+# Episode Source Models
+
+class EpisodeSourceRequest(BaseModel):
+    """Request to create an episode source record."""
+    transcription_id: str = Field(..., description="ID of the linked transcription")
+    email_subject: Optional[str] = Field(None, description="Original email subject")
+    email_from: Optional[str] = Field(None, description="Sender email address")
+    source_text: str = Field(..., description="Plain text content of the email")
+    matched_url: str = Field(..., description="URL extracted from the email")
+
+
+class EpisodeSourceResponse(BaseModel):
+    """Response for an episode source record."""
+    id: str
+    transcription_id: str
+    email_subject: Optional[str] = None
+    email_from: Optional[str] = None
+    source_text: str
+    matched_url: str
+    created_at: Optional[datetime] = None

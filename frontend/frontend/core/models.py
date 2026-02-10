@@ -63,6 +63,7 @@ class Transcription(Base):
 
     # Relationships
     summaries = relationship("Summary", back_populates="transcription", cascade="all, delete-orphan")
+    episode_sources = relationship("EpisodeSource", back_populates="transcription", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Transcription {self.id} ({self.status})>"
@@ -173,6 +174,37 @@ class Summary(Base):
         }
 
 
+class EpisodeSource(Base):
+    """Episode source record linking email content to a transcription."""
+
+    __tablename__ = 'episode_sources'
+
+    id = Column(String, primary_key=True)  # e.g., 'es_abc123'
+    transcription_id = Column(String, ForeignKey('transcriptions.id'), nullable=False)
+    email_subject = Column(String)
+    email_from = Column(String)
+    source_text = Column(Text, nullable=False)
+    matched_url = Column(String, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=func.now())
+
+    transcription = relationship("Transcription", back_populates="episode_sources")
+
+    def __repr__(self):
+        return f"<EpisodeSource {self.id} for {self.transcription_id}>"
+
+    def to_dict(self):
+        """Convert to dictionary for API responses."""
+        return {
+            'id': self.id,
+            'transcription_id': self.transcription_id,
+            'email_subject': self.email_subject,
+            'email_from': self.email_from,
+            'source_text': self.source_text,
+            'matched_url': self.matched_url,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 # Indexes for Transcription
 Index('idx_status', Transcription.status)
 Index('idx_created_at', Transcription.created_at.desc())
@@ -183,3 +215,6 @@ Index('idx_source_type', Transcription.source_type)
 # Indexes for Summary
 Index('idx_summary_transcription_id', Summary.transcription_id)
 Index('idx_summary_created_at', Summary.created_at.desc())
+
+# Indexes for EpisodeSource
+Index('idx_episode_sources_transcription_id', EpisodeSource.transcription_id)

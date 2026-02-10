@@ -217,3 +217,63 @@ class TestFrontendClient:
             mock_instance.post.assert_called_once()
             call_args = mock_instance.post.call_args
             assert call_args[1]["json"]["system_prompt_suffix"] == "Format as HTML"
+
+
+class TestCreateEpisodeSource:
+    """Tests for create_episode_source method."""
+
+    @pytest.mark.asyncio
+    async def test_create_episode_source(self):
+        """Test posting an episode source to the frontend API."""
+        client = FrontendClient(base_url="http://localhost:8000")
+
+        mock_response = httpx.Response(
+            status_code=201,
+            json={
+                "id": "es_abc123",
+                "transcription_id": "test_123",
+                "email_subject": "New episode",
+                "email_from": "news@example.com",
+                "source_text": "Episode about testing.",
+                "matched_url": "https://podcasts.apple.com/test",
+                "created_at": "2026-02-09T12:00:00",
+            },
+            request=httpx.Request("POST", "http://localhost:8000/api/episode-sources"),
+        )
+
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response):
+            result = await client.create_episode_source(
+                transcription_id="test_123",
+                email_subject="New episode",
+                email_from="news@example.com",
+                source_text="Episode about testing.",
+                matched_url="https://podcasts.apple.com/test",
+            )
+            assert result == "es_abc123"
+
+    @pytest.mark.asyncio
+    async def test_create_episode_source_minimal(self):
+        """Test posting with only required fields."""
+        client = FrontendClient(base_url="http://localhost:8000")
+
+        mock_response = httpx.Response(
+            status_code=201,
+            json={
+                "id": "es_def456",
+                "transcription_id": "test_456",
+                "email_subject": None,
+                "email_from": None,
+                "source_text": "Content only.",
+                "matched_url": "https://youtu.be/abc",
+                "created_at": "2026-02-09T12:00:00",
+            },
+            request=httpx.Request("POST", "http://localhost:8000/api/episode-sources"),
+        )
+
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response):
+            result = await client.create_episode_source(
+                transcription_id="test_456",
+                source_text="Content only.",
+                matched_url="https://youtu.be/abc",
+            )
+            assert result == "es_def456"

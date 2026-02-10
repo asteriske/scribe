@@ -31,6 +31,14 @@ class Settings(BaseSettings):
     imap_folder_done: str = "ScribeDone"
     imap_folder_error: str = "ScribeError"
 
+    # Episode Sources Folder Names
+    imap_folder_episode_sources: str = "EpisodeSources"
+    imap_folder_episode_sources_done: str = "EpisodeSourcesDone"
+    imap_folder_episode_sources_error: str = "EpisodeSourcesError"
+
+    # Episode Sources
+    episode_sources_return_address: str = "scribe_newsletters@patrickmccarthy.cc"
+
     # Processing
     poll_interval_seconds: int = 30
     max_concurrent_jobs: int = 3
