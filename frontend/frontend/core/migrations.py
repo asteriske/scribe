@@ -74,10 +74,40 @@ def add_source_context_column_if_missing(engine):
         logger.debug("source_context column already exists")
 
 
+def create_episode_sources_table_if_missing(engine):
+    """Create episode_sources table if it doesn't exist."""
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+
+    if 'episode_sources' not in tables:
+        logger.info("Creating episode_sources table")
+        with engine.connect() as conn:
+            conn.execute(text("""
+                CREATE TABLE episode_sources (
+                    id TEXT PRIMARY KEY,
+                    transcription_id TEXT NOT NULL,
+                    email_subject TEXT,
+                    email_from TEXT,
+                    source_text TEXT NOT NULL,
+                    matched_url TEXT NOT NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (transcription_id) REFERENCES transcriptions (id)
+                )
+            """))
+            conn.execute(text(
+                "CREATE INDEX idx_episode_sources_transcription_id ON episode_sources (transcription_id)"
+            ))
+            conn.commit()
+        logger.info("episode_sources table created successfully")
+    else:
+        logger.debug("episode_sources table already exists")
+
+
 def run_migrations(engine):
     """Run all pending migrations."""
     logger.info("Running database migrations")
     add_tags_column_if_missing(engine)
     create_summaries_table_if_missing(engine)
     add_source_context_column_if_missing(engine)
+    create_episode_sources_table_if_missing(engine)
     logger.info("Migrations complete")
