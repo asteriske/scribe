@@ -13,7 +13,7 @@ EPISODE_SOURCE_PATTERNS = [
     r"youtube\.com/watch",
     r"youtube\.com/live/",
     r"youtu\.be/",
-    r"podcasts\.apple\.com/",
+    r"podcasts\.apple\.com/.*[?&]i=\d+",
 ]
 
 # Link text patterns that suggest the href may redirect to a matching URL

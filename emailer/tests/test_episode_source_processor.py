@@ -37,23 +37,23 @@ class TestEpisodeSourceProcessor:
             msg_num="1",
             sender="newsletter@example.com",
             subject="New Episode: Testing 101",
-            body_text="Check out our latest episode https://podcasts.apple.com/us/podcast/ep1 about testing",
+            body_text="Check out our latest episode https://podcasts.apple.com/us/podcast/ep1?i=1000123456 about testing",
             body_html=None,
         )
 
         result = await processor.process_email(email)
 
         assert result.success
-        assert result.url == "https://podcasts.apple.com/us/podcast/ep1"
+        assert result.url == "https://podcasts.apple.com/us/podcast/ep1?i=1000123456"
         assert result.title == "Test Podcast"
         processor.frontend.submit_url.assert_called_once_with(
-            "https://podcasts.apple.com/us/podcast/ep1", tag="digest"
+            "https://podcasts.apple.com/us/podcast/ep1?i=1000123456", tag="digest"
         )
         processor.frontend.create_episode_source.assert_called_once()
         call_kwargs = processor.frontend.create_episode_source.call_args.kwargs
         assert call_kwargs["transcription_id"] == "trans_123"
         assert "Check out our latest episode" in call_kwargs["source_text"]
-        assert call_kwargs["matched_url"] == "https://podcasts.apple.com/us/podcast/ep1"
+        assert call_kwargs["matched_url"] == "https://podcasts.apple.com/us/podcast/ep1?i=1000123456"
         assert call_kwargs["email_subject"] == "New Episode: Testing 101"
         assert call_kwargs["email_from"] == "newsletter@example.com"
 
@@ -123,8 +123,8 @@ class TestEpisodeSourceProcessor:
             sender="user@example.com",
             subject="Two episodes",
             body_text=(
-                "First: https://podcasts.apple.com/ep1 "
-                "Second: https://podcasts.apple.com/ep2"
+                "First: https://podcasts.apple.com/us/podcast/ep1?i=1000111111 "
+                "Second: https://podcasts.apple.com/us/podcast/ep2?i=1000222222"
             ),
             body_html=None,
         )
@@ -153,13 +153,13 @@ class TestEpisodeSourceProcessor:
             sender="user@example.com",
             subject="HTML email",
             body_text=None,
-            body_html='<a href="https://podcasts.apple.com/html-ep">Listen</a>',
+            body_html='<a href="https://podcasts.apple.com/us/podcast/html-ep?i=1000333333">Listen</a>',
         )
 
         result = await processor.process_email(email)
 
         assert result.success
-        assert result.url == "https://podcasts.apple.com/html-ep"
+        assert result.url == "https://podcasts.apple.com/us/podcast/html-ep?i=1000333333"
 
     @pytest.mark.asyncio
     async def test_process_email_converts_html_to_plain_text(self, processor):
@@ -179,7 +179,7 @@ class TestEpisodeSourceProcessor:
             sender="user@example.com",
             subject="HTML only",
             body_text=None,
-            body_html='<p>Great episode about <b>testing</b>.</p><a href="https://podcasts.apple.com/conv">Listen</a>',
+            body_html='<p>Great episode about <b>testing</b>.</p><a href="https://podcasts.apple.com/us/podcast/conv?i=1000444444">Listen</a>',
         )
 
         result = await processor.process_email(email)
@@ -205,7 +205,7 @@ class TestEpisodeSourceProcessor:
             msg_num="7",
             sender="user@example.com",
             subject="Will fail",
-            body_text="https://podcasts.apple.com/fail",
+            body_text="https://podcasts.apple.com/us/podcast/fail?i=1000555555",
             body_html=None,
         )
 
@@ -215,3 +215,43 @@ class TestEpisodeSourceProcessor:
         assert "Audio download failed" in result.error
         # Should not create episode source on failure
         processor.frontend.create_episode_source.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_next_url_on_failure(self, processor):
+        """Test that if first URL fails, the next URL is tried."""
+        # First call fails, second succeeds
+        processor.frontend.submit_url = AsyncMock(
+            side_effect=["trans_fail", "trans_ok"]
+        )
+        processor.frontend.wait_for_completion = AsyncMock(
+            side_effect=[
+                MagicMock(status="failed", error="Download failed"),
+                MagicMock(
+                    status="completed",
+                    title="Second URL",
+                    duration_seconds=600,
+                    source_context=None,
+                ),
+            ]
+        )
+        processor.frontend.get_transcript_text = AsyncMock(return_value="Transcript")
+        processor.frontend.generate_summary = AsyncMock(return_value="Summary")
+        processor.frontend.create_episode_source = AsyncMock(return_value="es_fb")
+
+        email = EmailMessage(
+            msg_num="8",
+            sender="user@example.com",
+            subject="Two URLs",
+            body_text=(
+                "First: https://youtu.be/fail123 "
+                "Second: https://youtube.com/watch?v=ok456"
+            ),
+            body_html=None,
+        )
+
+        result = await processor.process_email(email)
+
+        assert result.success
+        # The successful URL should be whichever one completed
+        assert result.title == "Second URL"
+        assert processor.frontend.submit_url.call_count == 2

@@ -9,10 +9,15 @@ from emailer.episode_source_urls import extract_episode_source_urls
 class TestExtractEpisodeSourceUrls:
     """Tests for extracting Apple Podcasts and YouTube URLs only."""
 
-    def test_apple_podcasts_url(self):
-        text = "Check out https://podcasts.apple.com/us/podcast/ep123 today!"
+    def test_apple_podcasts_episode_url(self):
+        text = "Check out https://podcasts.apple.com/us/podcast/ep1?i=100012345623?i=1000123456 today!"
         urls = extract_episode_source_urls(text, is_html=False)
-        assert urls == ["https://podcasts.apple.com/us/podcast/ep123"]
+        assert urls == ["https://podcasts.apple.com/us/podcast/ep1?i=100012345623?i=1000123456"]
+
+    def test_ignores_apple_podcasts_show_url(self):
+        text = "Subscribe at https://podcasts.apple.com/us/podcast/my-show/id1234567"
+        urls = extract_episode_source_urls(text, is_html=False)
+        assert urls == []
 
     def test_youtube_watch_url(self):
         text = "Watch https://youtube.com/watch?v=abc123"
@@ -46,16 +51,16 @@ class TestExtractEpisodeSourceUrls:
 
     def test_multiple_urls_returns_all(self):
         text = (
-            "Apple: https://podcasts.apple.com/test "
+            "Apple: https://podcasts.apple.com/us/podcast/test?i=1000123456 "
             "YouTube: https://youtube.com/watch?v=abc"
         )
         urls = extract_episode_source_urls(text, is_html=False)
         assert len(urls) == 2
 
     def test_html_extracts_from_hrefs(self):
-        html = '<a href="https://podcasts.apple.com/us/podcast/ep1">Listen</a>'
+        html = '<a href="https://podcasts.apple.com/us/podcast/ep1?i=1000123456?i=1000123456">Listen</a>'
         urls = extract_episode_source_urls(html, is_html=True)
-        assert urls == ["https://podcasts.apple.com/us/podcast/ep1"]
+        assert urls == ["https://podcasts.apple.com/us/podcast/ep1?i=1000123456?i=1000123456"]
 
     def test_html_ignores_non_matching_hrefs(self):
         html = '<a href="https://example.com/page">Link</a>'
@@ -64,8 +69,8 @@ class TestExtractEpisodeSourceUrls:
 
     def test_deduplicates_urls(self):
         text = (
-            "https://podcasts.apple.com/test "
-            "https://podcasts.apple.com/test"
+            "https://podcasts.apple.com/test?i=1000123456 "
+            "https://podcasts.apple.com/test?i=1000123456"
         )
         urls = extract_episode_source_urls(text, is_html=False)
         assert len(urls) == 1
@@ -80,10 +85,10 @@ class TestRedirectResolution:
 
     @patch("emailer.episode_source_urls._resolve_redirect")
     def test_resolves_redirect_when_link_text_says_apple_podcasts(self, mock_resolve):
-        mock_resolve.return_value = "https://podcasts.apple.com/us/podcast/ep1"
+        mock_resolve.return_value = "https://podcasts.apple.com/us/podcast/ep1?i=1000123456"
         html = '<a href="https://substack.com/redirect/abc123">Apple Podcasts</a>'
         urls = extract_episode_source_urls(html, is_html=True)
-        assert urls == ["https://podcasts.apple.com/us/podcast/ep1"]
+        assert urls == ["https://podcasts.apple.com/us/podcast/ep1?i=1000123456"]
         mock_resolve.assert_called_once_with("https://substack.com/redirect/abc123")
 
     @patch("emailer.episode_source_urls._resolve_redirect")
@@ -117,15 +122,15 @@ class TestRedirectResolution:
 
     @patch("emailer.episode_source_urls._resolve_redirect")
     def test_no_redirect_needed_when_href_already_matches(self, mock_resolve):
-        html = '<a href="https://podcasts.apple.com/us/podcast/ep1">Apple Podcasts</a>'
+        html = '<a href="https://podcasts.apple.com/us/podcast/ep1?i=1000123456">Apple Podcasts</a>'
         urls = extract_episode_source_urls(html, is_html=True)
-        assert urls == ["https://podcasts.apple.com/us/podcast/ep1"]
+        assert urls == ["https://podcasts.apple.com/us/podcast/ep1?i=1000123456"]
         mock_resolve.assert_not_called()
 
     @patch("emailer.episode_source_urls._resolve_redirect")
     def test_resolves_multiple_redirect_links(self, mock_resolve):
         mock_resolve.side_effect = [
-            "https://podcasts.apple.com/us/podcast/ep1",
+            "https://podcasts.apple.com/us/podcast/ep1?i=1000123456",
             "https://youtube.com/watch?v=abc",
         ]
         html = (
@@ -134,5 +139,5 @@ class TestRedirectResolution:
         )
         urls = extract_episode_source_urls(html, is_html=True)
         assert len(urls) == 2
-        assert "https://podcasts.apple.com/us/podcast/ep1" in urls
+        assert "https://podcasts.apple.com/us/podcast/ep1?i=1000123456" in urls
         assert "https://youtube.com/watch?v=abc" in urls

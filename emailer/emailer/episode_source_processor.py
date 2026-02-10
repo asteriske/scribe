@@ -62,9 +62,7 @@ class EpisodeSourceProcessor:
                 error="No Apple Podcasts or YouTube URL found in email",
             )
 
-        # Use the first matching URL
-        url = urls[0]
-        logger.info(f"[episode-source] Processing URL: {url} (from {len(urls)} found)")
+        logger.info(f"[episode-source] Found {len(urls)} candidate URL(s): {urls}")
 
         # Get plain text content for storage
         if email.body_text:
@@ -74,8 +72,33 @@ class EpisodeSourceProcessor:
         else:
             source_text = ""
 
+        # Try each URL in order, falling back to the next on failure
+        last_error = None
+        for i, url in enumerate(urls):
+            logger.info(f"[episode-source] Trying URL {i + 1}/{len(urls)}: {url}")
+            result = await self._try_url(url, email, source_text, job_start)
+            if result.success:
+                return result
+            last_error = result.error
+            if len(urls) > 1:
+                logger.warning(f"[episode-source] URL {i + 1} failed: {last_error}")
+
+        # All URLs failed
+        return JobResult(
+            url=urls[0],
+            success=False,
+            error=last_error or "All URLs failed",
+        )
+
+    async def _try_url(
+        self,
+        url: str,
+        email: EmailMessage,
+        source_text: str,
+        job_start: float,
+    ) -> JobResult:
+        """Try to process a single URL. Returns JobResult (success or failure)."""
         current_step = "initializing"
-        transcription_id = None
         try:
             # Submit for transcription with "digest" tag
             current_step = "submitting URL"
