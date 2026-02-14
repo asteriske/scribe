@@ -95,7 +95,6 @@ async def get_all_tags(db: Session = Depends(get_db)):
     response_model=TranscriptionResponse,
     status_code=202,
     responses={
-        409: {"model": ErrorResponse, "description": "URL already transcribed"},
         400: {"model": ErrorResponse, "description": "Invalid URL"}
     }
 )
@@ -113,17 +112,6 @@ async def transcribe_url(
         # Parse and validate URL
         url_info = parse_url(request.url)
 
-        # Check for duplicate
-        existing = db.query(Transcription).filter_by(source_url=request.url).first()
-        if existing:
-            return JSONResponse(
-                status_code=409,
-                content=jsonable_encoder(ErrorResponse(
-                    detail="This URL has already been transcribed",
-                    existing_id=existing.id
-                ))
-            )
-
         # Normalize tags
         normalized_tags = normalize_tags(request.tags) if request.tags else []
 
@@ -138,17 +126,36 @@ async def transcribe_url(
             else:
                 logger.info("No show notes found or fetch failed, continuing without context")
 
-        # Create pending record
-        transcription = Transcription(
-            id=url_info.id,
-            source_type=url_info.source_type.value,
-            source_url=request.url,
-            status='pending',
-            progress=0,
-            tags=json.dumps(normalized_tags),
-            source_context=source_context
-        )
-        db.add(transcription)
+        # Upsert: check for existing record by ID or source_url
+        existing = db.query(Transcription).filter(
+            (Transcription.id == url_info.id) | (Transcription.source_url == request.url)
+        ).first()
+
+        if existing:
+            logger.info(f"Overwriting existing transcription {existing.id} for URL: {request.url}")
+            existing.source_type = url_info.source_type.value
+            existing.source_url = request.url
+            existing.status = 'pending'
+            existing.progress = 0
+            existing.tags = json.dumps(normalized_tags)
+            existing.source_context = source_context
+            existing.error_message = None
+            existing.retry_count = 0
+            existing.started_at = None
+            existing.transcribed_at = None
+            transcription = existing
+        else:
+            transcription = Transcription(
+                id=url_info.id,
+                source_type=url_info.source_type.value,
+                source_url=request.url,
+                status='pending',
+                progress=0,
+                tags=json.dumps(normalized_tags),
+                source_context=source_context
+            )
+            db.add(transcription)
+
         db.commit()
         db.refresh(transcription)
 
